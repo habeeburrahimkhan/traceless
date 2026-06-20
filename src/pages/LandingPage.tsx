@@ -22,7 +22,7 @@ export const LandingPage: React.FC = () => {
   }, [animationStep]);
 
   const handleAdminLoginClick = () => {
-    const passcode = prompt("Enter administrator passcode credentials (default is admin123):");
+    const passcode = prompt("Enter administrator passcode credentials:");
     if (passcode !== null) {
       const success = loginAsAdmin(passcode);
       if (success) {

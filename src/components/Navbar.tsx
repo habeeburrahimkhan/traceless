@@ -143,7 +143,7 @@ export const Navbar: React.FC = () => {
               ) : (
                 <button
                   onClick={() => {
-                    const passcode = prompt("Enter administrator passcode credentials (default is admin123):");
+                    const passcode = prompt("Enter administrator passcode credentials:");
                     if (passcode !== null) {
                       const success = loginAsAdmin(passcode);
                       if (success) navigate('dashboard');
