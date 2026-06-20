@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabase } from './lib/supabase.js';
-import { requireAdmin } from './lib/auth.js';
-import { setCorsHeaders } from './lib/cors.js';
-import { mapActivityLog, mapDocument } from './lib/mapper.js';
-import type { DbActivityLog, DbDocument } from './lib/mapper.js';
+import { supabase } from './_lib/supabase.js';
+import { requireAdmin } from './_lib/auth.js';
+import { setCorsHeaders } from './_lib/cors.js';
+import { mapActivityLog, mapDocument } from './_lib/mapper.js';
+import type { DbActivityLog, DbDocument } from './_lib/mapper.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);

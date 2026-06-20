@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { supabase } from './lib/supabase.js';
+import { supabase } from './_lib/supabase.js';
 import { Resend } from 'resend';
-import { setCorsHeaders } from './lib/cors.js';
-import { expireDocumentIfNeeded, fetchDocument, insertActivityLog } from './lib/documents.js';
+import { setCorsHeaders } from './_lib/cors.js';
+import { expireDocumentIfNeeded, fetchDocument, insertActivityLog } from './_lib/documents.js';
 
 const resendApiKey = process.env.RESEND_API_KEY || '';
 const resend = resendApiKey ? new Resend(resendApiKey) : null;

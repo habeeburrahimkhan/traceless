@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { requireAdmin } from './lib/auth.js';
-import { setCorsHeaders } from './lib/cors.js';
-import { fetchDocument, shredDocument } from './lib/documents.js';
-import { mapDocument } from './lib/mapper.js';
+import { requireAdmin } from './_lib/auth.js';
+import { setCorsHeaders } from './_lib/cors.js';
+import { fetchDocument, shredDocument } from './_lib/documents.js';
+import { mapDocument } from './_lib/mapper.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
