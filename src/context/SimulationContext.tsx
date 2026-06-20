@@ -108,7 +108,8 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const navigate = (page: string, docId?: string | null) => {
     // Zero-Trust route guard: Block non-admin from loading dashboard/access/activity
     const adminPages = ['dashboard', 'vendor-access', 'activity'];
-    if (adminPages.includes(page) && !isAdmin) {
+    const checkAdmin = isAdmin || sessionStorage.getItem('tl_is_admin') === 'true';
+    if (adminPages.includes(page) && !checkAdmin) {
       triggerToast('Security Alert: Unauthorized console route blocked. Passcode required.', 'error');
       setCurrentPage('landing');
       return;
