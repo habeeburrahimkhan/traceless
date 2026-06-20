@@ -16,10 +16,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  if (!requireAdmin(req, res)) return;
-
   try {
     const { docId, actionType } = req.body;
+
+    if (actionType === 'revoked') {
+      if (!requireAdmin(req, res)) return;
+    }
 
     if (!docId) {
       return res.status(400).json({ error: 'Missing docId parameter' });
