@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useSimulation } from '../context/SimulationContext';
+import { getShareUrl } from '../lib/api';
 import { 
   UploadCloud, Mail, Eye, ShieldAlert, Key, 
   Lock, CheckCircle, FileText, ArrowRight, Settings, RefreshCw, X, File, LockKeyhole,
@@ -53,7 +54,7 @@ export const UploadPage: React.FC = () => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (requireEmailVerification && !targetEmail) {
       alert('Error: Please enter a recipient email.');
@@ -67,42 +68,43 @@ export const UploadPage: React.FC = () => {
     setIsUploading(true);
     setUploadProgress(0);
 
-    // Simulated progress compiler animation
     let progress = 0;
     const progressInterval = setInterval(() => {
       progress += 10;
       setUploadProgress(Math.min(progress, 90));
     }, 50);
 
-    const processDocument = (fileContent: string, fileType: string) => {
-      clearInterval(progressInterval);
-      setUploadProgress(100);
+    const processDocument = async (fileContent: string, fileType: string) => {
+      try {
+        let expiresAt: string | null = null;
+        if (expiryMinutes > 0) {
+          expiresAt = new Date(Date.now() + expiryMinutes * 60000).toISOString();
+        }
 
-      // Compute expiration date
-      let expiresAt: string | null = null;
-      if (expiryMinutes > 0) {
-        expiresAt = new Date(Date.now() + expiryMinutes * 60000).toISOString();
-      }
+        const name = customFile.name;
+        const size = `${(customFile.size / 1024).toFixed(1)} KB`;
 
-      const name = customFile.name;
-      const size = `${(customFile.size / 1024).toFixed(1)} KB`;
+        const newDoc = await addDocument({
+          name,
+          size,
+          type: fileType,
+          otpEmail: requireEmailVerification ? targetEmail : '',
+          maxViews,
+          expiresAt,
+          requireWatermark,
+          content: fileContent,
+          requireEmailVerification,
+        });
 
-      const newDoc = addDocument({
-        name,
-        size,
-        type: fileType,
-        otpEmail: requireEmailVerification ? targetEmail : '',
-        maxViews,
-        expiresAt,
-        requireWatermark,
-        content: fileContent,
-        requireEmailVerification
-      } as any);
-
-      setTimeout(() => {
+        clearInterval(progressInterval);
+        setUploadProgress(100);
         setGeneratedDoc(newDoc);
+      } catch (error) {
+        clearInterval(progressInterval);
+        alert(error instanceof Error ? error.message : 'Upload failed');
+      } finally {
         setIsUploading(false);
-      }, 300);
+      }
     };
 
     const reader = new FileReader();
@@ -112,7 +114,13 @@ export const UploadPage: React.FC = () => {
 
     reader.onload = () => {
       const result = reader.result as string;
-      processDocument(result, isImage ? 'image' : (isPdf ? 'pdf' : (isText ? 'text' : 'pdf')));
+      void processDocument(result, isImage ? 'image' : isPdf ? 'pdf' : isText ? 'text' : 'pdf');
+    };
+
+    reader.onerror = () => {
+      clearInterval(progressInterval);
+      setIsUploading(false);
+      alert('Failed to read file');
     };
 
     if (isImage || isPdf) {
@@ -124,7 +132,7 @@ export const UploadPage: React.FC = () => {
 
   const handleCopyLink = () => {
     if (!generatedDoc) return;
-    const link = `https://traceless.access/secure-view/${generatedDoc.id}`;
+    const link = getShareUrl(generatedDoc.id);
     navigator.clipboard.writeText(link);
     alert('Sharing link copied!');
   };
@@ -416,7 +424,7 @@ export const UploadPage: React.FC = () => {
               <label className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest block">Access Token URL</label>
               <div className="flex bg-zinc-950 border border-zinc-900 rounded-lg p-2.5 items-center justify-between gap-4">
                 <span className="font-mono text-xs text-zinc-400 truncate select-all">
-                  https://traceless.access/secure-view/{generatedDoc.id}
+                  {getShareUrl(generatedDoc.id)}
                 </span>
                 <button
                   onClick={handleCopyLink}

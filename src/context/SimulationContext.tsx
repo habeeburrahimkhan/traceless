@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import * as api from '../lib/api';
 
 export interface Document {
   id: string;
@@ -6,15 +7,15 @@ export interface Document {
   size: string;
   type: string;
   uploadedAt: string;
-  expiresAt: string | null; // ISO string or null
+  expiresAt: string | null;
   maxViews: number;
   viewsCount: number;
   otpEmail: string;
   requireWatermark: boolean;
   status: 'active' | 'expired' | 'burned' | 'revoked';
   content: string;
-  otpCode: string | null;
-  decryptionKey: string;
+  otpCode?: string | null;
+  decryptionKey?: string;
   requireEmailVerification?: boolean;
 }
 
@@ -34,63 +35,91 @@ export interface Toast {
   id: string;
   message: string;
   type: 'info' | 'success' | 'warning' | 'error';
-  otpCode?: string; // Special field to show OTP triggers
+  otpCode?: string;
 }
 
 interface SimulationContextType {
   documents: Document[];
   activityLogs: ActivityLog[];
+  viewerDoc: Document | null;
   currentPage: string;
   activeViewerDocId: string | null;
   viewerEmailEntered: string;
   viewerAuthenticated: boolean;
   toasts: Toast[];
   isAdmin: boolean;
+  isLoading: boolean;
   loginAsAdmin: (passcode: string) => boolean;
   logoutAdmin: () => void;
   navigate: (page: string, docId?: string | null) => void;
-  addDocument: (doc: Omit<Document, 'id' | 'uploadedAt' | 'viewsCount' | 'status' | 'otpCode' | 'decryptionKey'>) => Document;
-  revokeDocument: (id: string) => void;
-  requestOTP: (docId: string, email: string) => boolean;
-  verifyOTP: (docId: string, code: string) => boolean;
-  incrementView: (docId: string) => void;
-  burnDocument: (docId: string, actionType: 'burned' | 'expired') => void;
+  refreshData: () => Promise<void>;
+  loadViewerDocument: (docId: string) => Promise<Document | null>;
+  lookupByOtp: (code: string) => Promise<Document | null>;
+  addDocument: (
+    doc: Omit<Document, 'id' | 'uploadedAt' | 'viewsCount' | 'status' | 'otpCode' | 'decryptionKey'>
+  ) => Promise<Document>;
+  revokeDocument: (id: string) => Promise<void>;
+  requestOTP: (docId: string, email: string) => Promise<boolean>;
+  verifyOTP: (docId: string, code: string) => Promise<boolean>;
+  burnDocument: (docId: string, actionType: 'burned' | 'expired') => Promise<void>;
   triggerToast: (message: string, type: 'info' | 'success' | 'warning' | 'error', otpCode?: string) => void;
   dismissToast: (id: string) => void;
-  clearAllLogs: () => void;
+  clearAllLogs: () => Promise<void>;
 }
 
 const SimulationContext = createContext<SimulationContextType | undefined>(undefined);
 
-// Initial realistic mock data (Clean slate for Zero-Trust production registry)
-const INITIAL_DOCUMENTS: Document[] = [];
-const INITIAL_LOGS: ActivityLog[] = [];
-
 export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [documents, setDocuments] = useState<Document[]>(() => {
-    const local = localStorage.getItem('tl_documents');
-    return local ? JSON.parse(local) : INITIAL_DOCUMENTS;
-  });
-
-  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(() => {
-    const local = localStorage.getItem('tl_activity_logs');
-    return local ? JSON.parse(local) : INITIAL_LOGS;
-  });
-
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  const [viewerDoc, setViewerDoc] = useState<Document | null>(null);
   const [currentPage, setCurrentPage] = useState<string>('landing');
   const [activeViewerDocId, setActiveViewerDocId] = useState<string | null>(null);
   const [viewerEmailEntered, setViewerEmailEntered] = useState<string>('');
   const [viewerAuthenticated, setViewerAuthenticated] = useState<boolean>(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
-    return sessionStorage.getItem('tl_is_admin') === 'true';
-  });
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isAdmin, setIsAdmin] = useState<boolean>(() => api.getAdminToken().length > 0);
+
+  const triggerToast = useCallback(
+    (message: string, type: 'info' | 'success' | 'warning' | 'error', otpCode?: string) => {
+      const id = `toast-${Math.random().toString(36).substring(2, 9)}`;
+      const newToast: Toast = { id, message, type, otpCode };
+      setToasts((prev) => [...prev, newToast]);
+
+      const duration = otpCode ? 15000 : 5000;
+      setTimeout(() => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      }, duration);
+    },
+    []
+  );
+
+  const dismissToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  const refreshData = useCallback(async () => {
+    if (!api.getAdminToken()) return;
+
+    setIsLoading(true);
+    try {
+      const data = await api.fetchDashboardData();
+      setDocuments(data.documents);
+      setActivityLogs(data.activityLogs);
+    } catch (error) {
+      triggerToast(error instanceof Error ? error.message : 'Failed to load dashboard data', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [triggerToast]);
 
   const loginAsAdmin = (passcode: string) => {
-    if (passcode === 'admin123') {
+    if (passcode === (import.meta.env.VITE_ADMIN_PASSCODE || 'admin123')) {
+      api.setAdminToken(passcode);
       setIsAdmin(true);
-      sessionStorage.setItem('tl_is_admin', 'true');
       triggerToast('Administrator validation aligned. Access granted.', 'success');
+      void refreshData();
       return true;
     }
     triggerToast('Access Denied: Invalid administrator signature passcode.', 'error');
@@ -98,17 +127,17 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const logoutAdmin = () => {
+    api.clearAdminToken();
     setIsAdmin(false);
-    sessionStorage.removeItem('tl_is_admin');
+    setDocuments([]);
+    setActivityLogs([]);
     triggerToast('Logged out of operations terminal.', 'info');
-    navigate('landing');
+    setCurrentPage('landing');
   };
 
-  // Custom client router
   const navigate = (page: string, docId?: string | null) => {
-    // Zero-Trust route guard: Block non-admin from loading dashboard/access/activity
     const adminPages = ['dashboard', 'vendor-access', 'activity'];
-    const checkAdmin = isAdmin || sessionStorage.getItem('tl_is_admin') === 'true';
+    const checkAdmin = isAdmin || api.getAdminToken().length > 0;
     if (adminPages.includes(page) && !checkAdmin) {
       triggerToast('Security Alert: Unauthorized console route blocked. Passcode required.', 'error');
       setCurrentPage('landing');
@@ -120,356 +149,217 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setActiveViewerDocId(docId);
       setViewerEmailEntered('');
       setViewerAuthenticated(false);
+      setViewerDoc(null);
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Synchronize with LocalStorage
+  const loadViewerDocument = useCallback(
+    async (docId: string) => {
+      try {
+        const doc = await api.fetchDocumentMetadata(docId);
+        setViewerDoc(doc);
+        return doc;
+      } catch (error) {
+        triggerToast(error instanceof Error ? error.message : 'Document not found', 'error');
+        setViewerDoc(null);
+        return null;
+      }
+    },
+    [triggerToast]
+  );
+
+  const lookupByOtp = useCallback(
+    async (code: string) => {
+      try {
+        const doc = await api.lookupDocumentByOtp(code);
+        setViewerDoc(doc);
+        setActiveViewerDocId(doc.id);
+        return doc;
+      } catch (error) {
+        triggerToast(error instanceof Error ? error.message : 'Invalid OTP key', 'error');
+        return null;
+      }
+    },
+    [triggerToast]
+  );
+
   useEffect(() => {
-    localStorage.setItem('tl_documents', JSON.stringify(documents));
-  }, [documents]);
+    const params = new URLSearchParams(window.location.search);
+    const page = params.get('page');
+    const docId = params.get('docId');
+    if (page === 'viewer' && docId) {
+      setCurrentPage('viewer');
+      setActiveViewerDocId(docId);
+    }
+  }, []);
 
   useEffect(() => {
-    localStorage.setItem('tl_activity_logs', JSON.stringify(activityLogs));
-  }, [activityLogs]);
-
-  // Toast Management
-  const triggerToast = (message: string, type: 'info' | 'success' | 'warning' | 'error', otpCode?: string) => {
-    const id = `toast-${Math.random().toString(36).substring(2, 9)}`;
-    const newToast: Toast = { id, message, type, otpCode };
-    setToasts(prev => [...prev, newToast]);
-
-    // Auto dismiss after 10s if it's an OTP toast, else 5s
-    const duration = otpCode ? 15000 : 5000;
-    setTimeout(() => {
-      dismissToast(id);
-    }, duration);
-  };
-
-  const dismissToast = (id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
-  };
-
-  const clearAllLogs = () => {
-    setActivityLogs([]);
-    triggerToast('Audit trail successfully purged.', 'info');
-  };
-
-
-  // Document management
-  const addDocument = (doc: Omit<Document, 'id' | 'uploadedAt' | 'viewsCount' | 'status' | 'otpCode' | 'decryptionKey'>) => {
-    const id = `doc-${Math.random().toString(36).substring(2, 9)}`;
-    const hexChars = '0123456789ABCDEF';
-    let mockKey = '0x';
-    for (let i = 0; i < 8; i++) mockKey += hexChars[Math.floor(Math.random() * 16)];
-    mockKey += '...';
-    for (let i = 0; i < 4; i++) mockKey += hexChars[Math.floor(Math.random() * 16)];
-
-    const generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
-
-    const newDoc: Document = {
-      ...doc,
-      requireEmailVerification: doc.requireEmailVerification ?? false,
-      id,
-      uploadedAt: new Date().toISOString(),
-      viewsCount: 0,
-      status: 'active',
-      otpCode: generatedOTP,
-      decryptionKey: mockKey
-    };
-
-    setDocuments(prev => [newDoc, ...prev]);
-
-    // Append log
-    const logId = `log-${Math.random().toString(36).substring(2, 9)}`;
-    const newLog: ActivityLog = {
-      id: logId,
-      timestamp: new Date().toISOString(),
-      documentId: id,
-      documentName: doc.name,
-      action: 'UPLOADED',
-      ipAddress: '185.190.140.2', // simulated admin IP
-      location: '',
-      details: `Secure document created. Access Tier: ${newDoc.requireEmailVerification ? `Highly Confidential (${newDoc.otpEmail})` : 'Standard (OTP Only)'}. Rules: max views = ${doc.maxViews}, lifespan = ${doc.expiresAt ? 'timed' : 'unlimited'}. Cryptographic key generated and registered.`,
-      severity: 'info'
-    };
-    setActivityLogs(prev => [newLog, ...prev]);
-
-    triggerToast(`Document "${doc.name}" securely locked & published.`, 'success');
-    return newDoc;
-  };
-
-  const revokeDocument = (id: string) => {
-    setDocuments(prev => prev.map(doc => {
-      if (doc.id === id) {
-        // Append log
-        const logId = `log-${Math.random().toString(36).substring(2, 9)}`;
-        const newLog: ActivityLog = {
-          id: logId,
-          timestamp: new Date().toISOString(),
-          documentId: id,
-          documentName: doc.name,
-          action: 'REVOKED',
-          ipAddress: '185.190.140.2',
-          location: '',
-          details: 'Admin revoked sharing credentials manually. Secure link invalidated.',
-          severity: 'critical'
-        };
-        setActivityLogs(prevLogs => [newLog, ...prevLogs]);
-
-        return { 
-          ...doc, 
-          status: 'revoked' as const,
-          content: '', // SHREDDED!
-          otpCode: null, // SHREDDED!
-          decryptionKey: '0x0000...0000 (REVOKED)' // SHREDDED!
-        };
-      }
-      return doc;
-    }));
-
-    // If currently viewing, reset viewer session
-    if (activeViewerDocId === id) {
-      setViewerAuthenticated(false);
-    }
-
-    triggerToast('Access token revoked. Link destroyed.', 'warning');
-  };
-
-  const burnDocument = (id: string, actionType: 'burned' | 'expired') => {
-    setDocuments(prev => prev.map(doc => {
-      if (doc.id === id) {
-        // Append log
-        const logId = `log-${Math.random().toString(36).substring(2, 9)}`;
-        const newLog: ActivityLog = {
-          id: logId,
-          timestamp: new Date().toISOString(),
-          documentId: id,
-          documentName: doc.name,
-          action: 'BURNED',
-          ipAddress: '0.0.0.0 (System)',
-          location: '',
-          details: actionType === 'expired' 
-            ? 'Document lifespan expired. Shredding in memory structures.' 
-            : 'Access count ceiling met. Cryptographic key purged.',
-          severity: 'warning'
-        };
-        setActivityLogs(prevLogs => [newLog, ...prevLogs]);
-
-        return { 
-          ...doc, 
-          status: actionType === 'expired' ? 'expired' as const : 'burned' as const,
-          content: '', // SHREDDED!
-          otpCode: null, // SHREDDED!
-          decryptionKey: '0x0000...0000 (PURGED)' // SHREDDED!
-        };
-      }
-      return doc;
-    }));
-
-    if (activeViewerDocId === id) {
-      setViewerAuthenticated(false);
-    }
-
-    triggerToast(actionType === 'expired' ? 'Document has expired' : 'Document has self-destructed', 'error');
-  };
-
-  // OTP Verification
-  const requestOTP = (docId: string, email: string) => {
-    const doc = documents.find(d => d.id === docId);
-    if (!doc) {
-      triggerToast('Document not found.', 'error');
-      return false;
-    }
-
-    if (doc.status !== 'active') {
-      triggerToast('This secure path is no longer available.', 'error');
-      return false;
-    }
-
-    // Verify recipient email matches
-    if (doc.otpEmail.trim().toLowerCase() !== email.trim().toLowerCase()) {
-      // Append warning log for intrusion attempt
-      const logId = `log-${Math.random().toString(36).substring(2, 9)}`;
-      const newLog: ActivityLog = {
-        id: logId,
-        timestamp: new Date().toISOString(),
-        documentId: docId,
-        documentName: doc.name,
-        action: 'ATTACK_PREVENTED',
-        ipAddress: '198.51.100.12', // malicious IP
-        location: '',
-        details: `Intrusion Alert: Unauthorized access attempt with email: "${email}". Request rejected.`,
-        severity: 'critical'
-      };
-      setActivityLogs(prev => [newLog, ...prev]);
-      triggerToast(`Verification failed: Email does not match access token credentials. Security alert logged.`, 'error');
-      return false;
-    }
-
-    // Use existing OTP or generate one
-    const generatedOTP = doc.otpCode || Math.floor(100000 + Math.random() * 900000).toString();
-    
-    setDocuments(prev => prev.map(d => {
-      if (d.id === docId) {
-        return { ...d, otpCode: generatedOTP };
-      }
-      return d;
-    }));
-
-    setViewerEmailEntered(email);
-
-    // Log OTP request
-    const logId = `log-${Math.random().toString(36).substring(2, 9)}`;
-    const newLog: ActivityLog = {
-      id: logId,
-      timestamp: new Date().toISOString(),
-      documentId: docId,
-      documentName: doc.name,
-      action: 'OTP_REQUESTED',
-      ipAddress: '72.229.28.185', // recipient IP
-      location: '',
-      details: `Zero-Trust verification OTP dispatched to ${email}`,
-      severity: 'info'
-    };
-    setActivityLogs(prev => [newLog, ...prev]);
-
-    // Trigger simulation toast
-    triggerToast(
-      `Zero-Trust OTP sent to ${email}. Check sandbox simulation banner for code.`, 
-      'info', 
-      generatedOTP
-    );
-
-    return true;
-  };
-
-  const verifyOTP = (docId: string, code: string) => {
-    const doc = documents.find(d => d.id === docId);
-    if (!doc || doc.status !== 'active') {
-      triggerToast('This session has been terminated.', 'error');
-      return false;
-    }
-
-    if (doc.otpCode === code || code === '000000') { // allow '000000' as bypass fallback code
-      setViewerAuthenticated(true);
-      
-      // Log OTP success
-      const logId = `log-${Math.random().toString(36).substring(2, 9)}`;
-      const newLog: ActivityLog = {
-        id: logId,
-        timestamp: new Date().toISOString(),
-        documentId: docId,
-        documentName: doc.name,
-        action: 'OTP_VERIFIED',
-        ipAddress: '72.229.28.185',
-        location: '',
-        details: 'Multi-factor signature verified. Granting transient access.',
-        severity: 'info'
-      };
-      setActivityLogs(prev => [newLog, ...prev]);
-
-      triggerToast('Access granted. Document decrypted.', 'success');
-      return true;
+    if (activeViewerDocId) {
+      void loadViewerDocument(activeViewerDocId);
     } else {
-      // Failed OTP verification log
-      const logId = `log-${Math.random().toString(36).substring(2, 9)}`;
-      const newLog: ActivityLog = {
-        id: logId,
-        timestamp: new Date().toISOString(),
-        documentId: docId,
-        documentName: doc.name,
-        action: 'ATTACK_PREVENTED',
-        ipAddress: '72.229.28.185',
-        location: '',
-        details: 'OTP authentication failure: invalid token signature.',
-        severity: 'warning'
-      };
-      setActivityLogs(prev => [newLog, ...prev]);
+      setViewerDoc(null);
+    }
+  }, [activeViewerDocId, loadViewerDocument]);
 
-      triggerToast('Invalid verification code. Please try again.', 'error');
+  useEffect(() => {
+    if (isAdmin && ['dashboard', 'vendor-access', 'activity', 'upload'].includes(currentPage)) {
+      void refreshData();
+    }
+  }, [isAdmin, currentPage, refreshData]);
+
+  const addDocument = async (
+    doc: Omit<Document, 'id' | 'uploadedAt' | 'viewsCount' | 'status' | 'otpCode' | 'decryptionKey'>
+  ) => {
+    const uploaded = await api.uploadDocument({
+      name: doc.name,
+      size: doc.size,
+      type: doc.type,
+      requireEmailVerification: doc.requireEmailVerification ?? false,
+      otpEmail: doc.otpEmail,
+      requireWatermark: doc.requireWatermark,
+      maxViews: doc.maxViews,
+      expiresAt: doc.expiresAt,
+      content: doc.content,
+    });
+
+    setDocuments((prev) => [uploaded, ...prev]);
+    triggerToast(`Document "${doc.name}" securely locked & published.`, 'success');
+    return uploaded;
+  };
+
+  const revokeDocument = async (id: string) => {
+    try {
+      await api.burnDocumentApi(id, 'revoked');
+      setDocuments((prev) =>
+        prev.map((doc) =>
+          doc.id === id
+            ? {
+                ...doc,
+                status: 'revoked',
+                content: '',
+                otpCode: null,
+                decryptionKey: '0x0000...0000 (REVOKED)',
+              }
+            : doc
+        )
+      );
+      if (activeViewerDocId === id) {
+        setViewerAuthenticated(false);
+        setViewerDoc((prev) => (prev ? { ...prev, status: 'revoked' } : prev));
+      }
+      triggerToast('Access token revoked. Link destroyed.', 'warning');
+      await refreshData();
+    } catch (error) {
+      triggerToast(error instanceof Error ? error.message : 'Failed to revoke document', 'error');
+    }
+  };
+
+  const burnDocument = async (docId: string, actionType: 'burned' | 'expired') => {
+    try {
+      await api.burnDocumentApi(docId, actionType);
+      setDocuments((prev) =>
+        prev.map((doc) =>
+          doc.id === docId
+            ? {
+                ...doc,
+                status: actionType === 'expired' ? 'expired' : 'burned',
+                content: '',
+                otpCode: null,
+                decryptionKey: '0x0000...0000 (PURGED)',
+              }
+            : doc
+        )
+      );
+      if (activeViewerDocId === docId) {
+        setViewerAuthenticated(false);
+        setViewerDoc((prev) =>
+          prev ? { ...prev, status: actionType === 'expired' ? 'expired' : 'burned', content: '' } : prev
+        );
+      }
+      triggerToast(actionType === 'expired' ? 'Document has expired' : 'Document has self-destructed', 'error');
+      await refreshData();
+    } catch (error) {
+      triggerToast(error instanceof Error ? error.message : 'Failed to burn document', 'error');
+    }
+  };
+
+  const requestOTP = async (docId: string, email: string) => {
+    try {
+      const result = await api.requestOtp(docId, email);
+      setViewerEmailEntered(email);
+
+      if (result.devOtp) {
+        triggerToast(
+          `Zero-Trust OTP sent to ${email}. Email delivery unavailable — code shown below.`,
+          'info',
+          result.devOtp
+        );
+      } else {
+        triggerToast(`Zero-Trust OTP sent to ${email}. Check your inbox.`, 'info');
+      }
+
+      await refreshData();
+      return true;
+    } catch (error) {
+      triggerToast(error instanceof Error ? error.message : 'OTP request failed', 'error');
+      await refreshData();
       return false;
     }
   };
 
-  const incrementView = (docId: string) => {
-    setDocuments(prev => prev.map(doc => {
-      if (doc.id === docId) {
-        const nextViews = doc.viewsCount + 1;
-        const reachedMax = nextViews >= doc.maxViews;
-
-        // Log view action
-        const logId = `log-${Math.random().toString(36).substring(2, 9)}`;
-        const viewLog: ActivityLog = {
-          id: logId,
-          timestamp: new Date().toISOString(),
-          documentId: docId,
-          documentName: doc.name,
-          action: 'VIEWED',
-          ipAddress: '72.229.28.185',
-          location: '',
-          details: `Document rendered safely (Access ${nextViews} of ${doc.maxViews}). Screenshot prevention active.`,
-          severity: 'info'
-        };
-
-        const updatedStatus = reachedMax ? 'burned' : doc.status;
-
-        setTimeout(() => {
-          if (reachedMax) {
-            burnDocument(docId, 'burned');
-          }
-        }, 100);
-
-        setActivityLogs(prevLogs => [viewLog, ...prevLogs]);
-
-        return {
-          ...doc,
-          viewsCount: nextViews,
-          status: updatedStatus,
-          otpCode: null // invalidate current OTP on use
-        };
-      }
-      return doc;
-    }));
+  const verifyOTP = async (docId: string, code: string) => {
+    try {
+      const unlocked = await api.verifyOtp(docId, code);
+      setViewerDoc(unlocked);
+      setViewerAuthenticated(true);
+      triggerToast('Access granted. Document decrypted.', 'success');
+      await refreshData();
+      return true;
+    } catch (error) {
+      triggerToast(error instanceof Error ? error.message : 'Invalid verification code', 'error');
+      await refreshData();
+      return false;
+    }
   };
 
-  // Background checker for expiration of documents
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date();
-      documents.forEach(doc => {
-        if (doc.status === 'active' && doc.expiresAt && new Date(doc.expiresAt) <= now) {
-          burnDocument(doc.id, 'expired');
-        }
-      });
-    }, 10000); // check every 10s
-
-    return () => clearInterval(interval);
-  }, [documents]);
+  const clearAllLogs = async () => {
+    try {
+      await api.clearLogsApi();
+      await refreshData();
+      triggerToast('Audit trail successfully purged.', 'info');
+    } catch (error) {
+      triggerToast(error instanceof Error ? error.message : 'Failed to clear logs', 'error');
+    }
+  };
 
   return (
     <SimulationContext.Provider
       value={{
         documents,
         activityLogs,
+        viewerDoc,
         currentPage,
         activeViewerDocId,
         viewerEmailEntered,
         viewerAuthenticated,
         toasts,
         isAdmin,
+        isLoading,
         loginAsAdmin,
         logoutAdmin,
         navigate,
+        refreshData,
+        loadViewerDocument,
+        lookupByOtp,
         addDocument,
         revokeDocument,
         requestOTP,
         verifyOTP,
-        incrementView,
         burnDocument,
         triggerToast,
         dismissToast,
-        clearAllLogs
+        clearAllLogs,
       }}
     >
       {children}

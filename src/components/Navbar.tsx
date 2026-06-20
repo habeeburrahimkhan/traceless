@@ -6,10 +6,8 @@ export const Navbar: React.FC = () => {
   const { currentPage, navigate, documents, isAdmin, logoutAdmin, loginAsAdmin } = useSimulation();
 
   const handleReset = () => {
-    localStorage.removeItem('tl_documents');
-    localStorage.removeItem('tl_activity_logs');
-    sessionStorage.removeItem('tl_is_admin');
-    window.location.reload();
+    sessionStorage.removeItem('tl_admin_token');
+    window.location.href = '/';
   };
 
   const isInternalAdmin = isAdmin && currentPage !== 'landing' && currentPage !== 'viewer';
@@ -25,10 +23,10 @@ export const Navbar: React.FC = () => {
           </span>
           <span className="text-zinc-300 font-bold tracking-wider">SECURE SHIELD OVERLAY // ACTIVE</span>
           <span className="text-zinc-800 hidden sm:inline">|</span>
-          <span className="hidden sm:inline text-zinc-500">AES-256 E2E Key Exchange Sandbox Simulator</span>
+          <span className="hidden sm:inline text-zinc-500">Zero-Trust Document Access Platform</span>
         </div>
         <div className="flex items-center gap-3">
-          <span className="hidden md:inline text-xs text-zinc-650 bg-zinc-900/40 px-2 py-0.5 rounded border border-zinc-900">SANDBOX TERMINAL</span>
+          <span className="hidden md:inline text-xs text-zinc-650 bg-zinc-900/40 px-2 py-0.5 rounded border border-zinc-900">LIVE TERMINAL</span>
           <button 
             onClick={handleReset} 
             title="Reset simulation data to initial mocks"

@@ -26,17 +26,20 @@ const getPdfBlobUrl = (dataUrl: string): string => {
 
 export const SecureViewerPage: React.FC = () => {
   const { 
-    documents, 
+    viewerDoc,
+    documents,
     activeViewerDocId, 
     viewerEmailEntered, 
     viewerAuthenticated, 
     requestOTP, 
     verifyOTP, 
-    incrementView, 
     burnDocument, 
     triggerToast,
     navigate,
-    isAdmin
+    isAdmin,
+    lookupByOtp,
+    loadViewerDocument,
+    isLoading,
   } = useSimulation();
 
   // Input & Stage states
@@ -59,7 +62,7 @@ export const SecureViewerPage: React.FC = () => {
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const countdownIntervalRef = useRef<any>(null);
 
-  const doc = documents.find(d => d.id === activeViewerDocId);
+  const doc = viewerDoc;
 
   // Convert base64 PDF into a Blob URL on document selection
   useEffect(() => {
@@ -99,25 +102,22 @@ export const SecureViewerPage: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Reset stages on document change
   useEffect(() => {
     setIsPrintDone(false);
-    if (activeViewerDocId) {
-      const selectedDoc = documents.find(d => d.id === activeViewerDocId);
-      if (selectedDoc) {
-        if (selectedDoc.requireEmailVerification) {
-          setVerifyStage('email');
-        } else {
-          // If we already set stage to validating (because OTP was entered directly), don't overwrite it
-          setVerifyStage(prev => (prev === 'validating' || prev === 'success') ? prev : 'otp');
-        }
+    if (activeViewerDocId && viewerDoc) {
+      if (viewerDoc.requireEmailVerification) {
+        setVerifyStage('email');
+      } else if (!viewerAuthenticated) {
+        setVerifyStage((prev) => (prev === 'validating' || prev === 'success' ? prev : 'otp'));
       }
-    } else {
+    } else if (!activeViewerDocId) {
       setVerifyStage('email');
     }
-    setEmailInput('');
-    setOtpInput('');
-  }, [activeViewerDocId]);
+    if (!viewerAuthenticated) {
+      setEmailInput('');
+      setOtpInput('');
+    }
+  }, [activeViewerDocId, viewerDoc?.id, viewerAuthenticated]);
 
   // Handle countdown timer in decrypted viewer
   useEffect(() => {
@@ -150,13 +150,6 @@ export const SecureViewerPage: React.FC = () => {
       if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
     };
   }, [doc, viewerAuthenticated]);
-
-  // Increment view count once authenticated
-  useEffect(() => {
-    if (viewerAuthenticated && doc && doc.status === 'active') {
-      incrementView(doc.id);
-    }
-  }, [viewerAuthenticated, activeViewerDocId]);
 
 
   // Block copy/print/save keyboard commands in Secure Viewer
@@ -194,82 +187,77 @@ export const SecureViewerPage: React.FC = () => {
     };
   }, [viewerAuthenticated, doc]);
 
-  // Handle Document ID or OTP Submission
-  const handleDocIdSubmit = (e: React.FormEvent) => {
+  const handleDocIdSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!docIdInput) return;
 
     const trimmedInput = docIdInput.trim();
-    
-    // Check if it's a 6-digit code or a doc ID
-    let targetDoc = documents.find(d => d.id === trimmedInput);
-    let enteredOTP = false;
-    
-    if (!targetDoc && /^\d{6}$/.test(trimmedInput)) {
-      // Find document matching the OTP code
-      targetDoc = documents.find(d => d.otpCode === trimmedInput && d.status === 'active');
-      enteredOTP = true;
-    }
 
-    if (targetDoc) {
+    if (/^\d{6}$/.test(trimmedInput)) {
+      const targetDoc = await lookupByOtp(trimmedInput);
+      if (!targetDoc) return;
+
       if (targetDoc.status !== 'active') {
         triggerToast('Error: This document share token has expired or been shredded.', 'error');
-      } else {
-        if (enteredOTP && !targetDoc.requireEmailVerification) {
-          // Immediately validate and decrypt!
-          navigate('viewer', targetDoc.id);
-          setVerifyStage('validating');
-          setOtpInput(trimmedInput);
-          setTimeout(() => {
-            setVerifyStage('success');
-            setTimeout(() => {
-              verifyOTP(targetDoc!.id, trimmedInput);
-            }, 1500);
-          }, 1500);
-        } else if (targetDoc.requireEmailVerification) {
-          // Requires email verification first
-          navigate('viewer', targetDoc.id);
-          setVerifyStage('email');
-        } else {
-          // No email verification required, but loaded via ID. Show OTP entry.
-          navigate('viewer', targetDoc.id);
-          setVerifyStage('otp');
-        }
+        return;
       }
+
+      navigate('viewer', targetDoc.id);
+
+      if (!targetDoc.requireEmailVerification) {
+        setVerifyStage('validating');
+        setOtpInput(trimmedInput);
+        setTimeout(() => {
+          setVerifyStage('success');
+          setTimeout(async () => {
+            const ok = await verifyOTP(targetDoc.id, trimmedInput);
+            if (!ok) setVerifyStage('failure');
+          }, 1500);
+        }, 1500);
+      } else {
+        setVerifyStage('email');
+      }
+      return;
+    }
+
+    const targetDoc = await loadViewerDocument(trimmedInput);
+    if (!targetDoc) return;
+
+    if (targetDoc.status !== 'active') {
+      triggerToast('Error: This document share token has expired or been shredded.', 'error');
+      return;
+    }
+
+    navigate('viewer', trimmedInput);
+
+    if (targetDoc.requireEmailVerification) {
+      setVerifyStage('email');
     } else {
-      triggerToast('Error: Invalid Document share token or OTP key.', 'error');
+      setVerifyStage('otp');
     }
   };
 
-  // Handle email submission to generate OTP
-  const handleEmailSubmit = (e: React.FormEvent) => {
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!emailInput) return;
+    if (!emailInput || !doc) return;
 
-    const success = requestOTP(doc!.id, emailInput);
+    const success = await requestOTP(doc.id, emailInput);
     if (success) {
       setVerifyStage('otp');
     }
   };
 
-  // Handle OTP verification with loading, success and failure stages
-  const handleOTPVerify = (e: React.FormEvent) => {
+  const handleOTPVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otpInput) return;
+    if (!otpInput || !doc) return;
 
     setVerifyStage('validating');
 
-    setTimeout(() => {
-      const isOTPValid = doc!.otpCode === otpInput || otpInput === '000000';
-
-      if (isOTPValid) {
+    setTimeout(async () => {
+      const ok = await verifyOTP(doc.id, otpInput);
+      if (ok) {
         setVerifyStage('success');
-        
-        setTimeout(() => {
-          verifyOTP(doc!.id, otpInput);
-        }, 1500);
       } else {
-        verifyOTP(doc!.id, otpInput); 
         setVerifyStage('failure');
       }
     }, 1500);
@@ -340,9 +328,16 @@ export const SecureViewerPage: React.FC = () => {
     }
   };
 
-  // RENDER PHASE A: Document ID / OTP entry screen (if doc is null)
+  if (activeViewerDocId && !doc && isLoading) {
+    return (
+      <div className="max-w-md mx-auto py-12 px-4 text-center text-zinc-400 font-mono text-sm">
+        Loading secure document envelope...
+      </div>
+    );
+  }
+
   if (!doc) {
-    const activeDocs = documents.filter(d => d.status === 'active');
+    const activeDocs = isAdmin ? documents.filter((d) => d.status === 'active') : [];
 
     return (
       <div className="max-w-md mx-auto py-12 px-4 animate-fade-in">
@@ -393,16 +388,26 @@ export const SecureViewerPage: React.FC = () => {
           {!isAdmin && (
             <div className="pt-4 border-t border-zinc-900 space-y-3 font-mono text-[10px]">
               <p className="text-zinc-500 flex items-center gap-1 uppercase tracking-wider">
-                <HelpCircle className="h-3.5 w-3.5" /> Simulation active registry:
+                <HelpCircle className="h-3.5 w-3.5" /> Enter the 6-digit OTP or document ID from your sender.
+              </p>
+            </div>
+          )}
+          {isAdmin && (
+            <div className="pt-4 border-t border-zinc-900 space-y-3 font-mono text-[10px]">
+              <p className="text-zinc-500 flex items-center gap-1 uppercase tracking-wider">
+                <HelpCircle className="h-3.5 w-3.5" /> Admin quick access registry:
               </p>
               <div className="flex flex-col gap-1.5">
                 {activeDocs.length === 0 ? (
-                  <span className="text-zinc-650 italic">No active shares found. Go to Upload Page to share one.</span>
+                  <span className="text-zinc-650 italic">No active shares found. Upload a document first.</span>
                 ) : (
-                  activeDocs.map(d => (
+                  activeDocs.map((d) => (
                     <button
                       key={d.id}
-                      onClick={() => { setDocIdInput(d.requireEmailVerification ? d.id : (d.otpCode || d.id)); }}
+                      type="button"
+                      onClick={() => {
+                        setDocIdInput(d.requireEmailVerification ? d.id : d.otpCode || d.id);
+                      }}
                       className="flex justify-between items-center bg-zinc-900/40 border border-zinc-850 hover:border-cyan-500/20 px-2.5 py-1.5 rounded text-left text-zinc-400 hover:text-zinc-200 transition-colors"
                     >
                       <span className="truncate max-w-[180px]">{d.name}</span>
@@ -747,7 +752,7 @@ export const SecureViewerPage: React.FC = () => {
   }
 
   // Dynamic Watermark Text: OTP, Timestamp, Viewer Session ID
-  const dynamicWatermarkText = `OTP: ${doc.otpCode} // SECURE PRINT STREAM // TIME: ${currentTimestamp} // SESSION: ${sessionID}`;
+  const dynamicWatermarkText = `OTP: ${otpInput || '******'} // SECURE PRINT STREAM // TIME: ${currentTimestamp} // SESSION: ${sessionID}`;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-6 animate-fade-in font-mono print:p-0 print:m-0 print:bg-white print:text-black">
@@ -864,7 +869,7 @@ export const SecureViewerPage: React.FC = () => {
                       {doc.requireEmailVerification && (
                         <p>AUTHORIZED RECIPIENT: <span className="text-zinc-900 font-semibold">{doc.otpEmail}</span></p>
                       )}
-                      <p>VERIFICATION TOKEN PIN: <span className="text-emerald-600 font-bold font-mono">{doc.otpCode}</span></p>
+                      <p>VERIFICATION TOKEN PIN: <span className="text-emerald-600 font-bold font-mono">{otpInput || '******'}</span></p>
                       <p>STATUS CREDENTIAL: <span className="text-emerald-600 font-semibold uppercase">ACTIVE</span></p>
                     </div>
                   </div>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useSimulation } from '../context/SimulationContext';
+import { getShareUrl } from '../lib/api';
 import { 
   Users, Key, Calendar, Eye, 
   ExternalLink, Copy, Ban, ShieldAlert, X
@@ -22,7 +23,7 @@ export const VendorAccessPage: React.FC = () => {
   });
 
   const handleCopyLink = (id: string) => {
-    const url = `https://traceless.access/secure-view/${id}`;
+    const url = getShareUrl(id);
     navigator.clipboard.writeText(url);
     alert('Secure link copied to clipboard!');
   };
