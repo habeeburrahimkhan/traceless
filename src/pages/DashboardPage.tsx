@@ -49,7 +49,7 @@ export const DashboardPage: React.FC = () => {
       {/* Grid of Key Performance Indicators */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Active Shares */}
-        <div className="p-6 rounded-xl border border-zinc-800 bg-zinc-950/40 relative overflow-hidden">
+        <div className="p-4 sm:p-6 rounded-xl border border-zinc-800 bg-zinc-950/40 relative overflow-hidden">
           <div className="absolute top-0 right-0 p-3 text-emerald-500/20">
             <ShieldCheck className="h-10 w-10" />
           </div>
@@ -59,7 +59,7 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* Burned */}
-        <div className="p-6 rounded-xl border border-zinc-800 bg-zinc-950/40 relative overflow-hidden">
+        <div className="p-4 sm:p-6 rounded-xl border border-zinc-800 bg-zinc-950/40 relative overflow-hidden">
           <div className="absolute top-0 right-0 p-3 text-rose-500/20">
             <Trash2 className="h-10 w-10" />
           </div>
@@ -69,7 +69,7 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* Total Views */}
-        <div className="p-6 rounded-xl border border-zinc-800 bg-zinc-950/40 relative overflow-hidden">
+        <div className="p-4 sm:p-6 rounded-xl border border-zinc-800 bg-zinc-950/40 relative overflow-hidden">
           <div className="absolute top-0 right-0 p-3 text-cyan-500/20">
             <Eye className="h-10 w-10" />
           </div>
@@ -79,7 +79,7 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* Expired shares */}
-        <div className="p-6 rounded-xl border border-zinc-800 bg-zinc-950/40 relative overflow-hidden">
+        <div className="p-4 sm:p-6 rounded-xl border border-zinc-800 bg-zinc-950/40 relative overflow-hidden">
           <div className="absolute top-0 right-0 p-3 text-amber-500/20">
             <Clock className="h-10 w-10" />
           </div>

@@ -812,7 +812,7 @@ export const SecureViewerPage: React.FC = () => {
         {/* High-Fidelity Decrypted Sandbox Viewer */}
         <div className="flex-1 p-6 sm:p-10 bg-zinc-900/20 flex justify-center items-center print:bg-white print:p-0">
           {doc.type === 'pdf' ? (
-            <div className="w-full max-w-5xl h-[800px] bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden relative shadow-2xl print:border-none print:bg-transparent print:p-0 print:h-screen print:w-screen print-sheet print-sheet-pdf">
+            <div className="w-full max-w-5xl h-[500px] sm:h-[800px] bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden relative shadow-2xl print:border-none print:bg-transparent print:p-0 print:h-screen print:w-screen print-sheet print-sheet-pdf">
               {doc.requireWatermark && (
                 <div className="absolute inset-0 select-none pointer-events-none grid grid-cols-2 gap-x-8 gap-y-16 py-12 px-6 overflow-hidden z-30 opacity-[0.04] font-mono text-[9px] font-bold text-center text-zinc-900 rotate-[-30deg] scale-125 print-hidden">
                   {Array.from({ length: 16 }).map((_, i) => (
@@ -828,7 +828,7 @@ export const SecureViewerPage: React.FC = () => {
               />
             </div>
           ) : (
-            <div className="bg-white text-zinc-900 shadow-2xl p-12 max-w-3xl w-full border border-zinc-200 aspect-[1/1.414] min-h-[750px] relative overflow-hidden rounded-md select-none font-sans print-sheet print:shadow-none print:border-none print:m-0 print:p-8">
+            <div className="bg-white text-zinc-900 shadow-2xl p-4 sm:p-12 max-w-3xl w-full border border-zinc-200 aspect-none sm:aspect-[1/1.414] min-h-0 sm:min-h-[750px] relative overflow-hidden rounded-md select-none font-sans print-sheet print:shadow-none print:border-none print:m-0 print:p-8">
               {/* DYNAMIC WATERMARK OVERLAY GRID */}
               {doc.requireWatermark && (
                 <div className="absolute inset-0 select-none pointer-events-none grid grid-cols-2 gap-x-8 gap-y-16 py-12 px-6 overflow-hidden z-30 opacity-[0.06] font-mono text-[9px] font-bold text-center text-zinc-900 rotate-[-30deg] scale-125 print-hidden">

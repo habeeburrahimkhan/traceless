@@ -33,7 +33,7 @@ export const LandingPage: React.FC = () => {
 
   // Connecting line helper
   const FlowLine = ({ active, isPurging }: { active: boolean; isPurging: boolean }) => (
-    <div className="flex-1 min-w-[8px] max-w-[20px] h-0.5 bg-zinc-900 relative rounded-full self-center">
+    <div className="w-3 sm:w-5 shrink-0 h-0.5 bg-zinc-900 relative rounded-full self-center">
       {active && (
         <div
           className={`absolute inset-0 rounded-full transition-all duration-500 origin-left scale-x-100 ${
@@ -78,10 +78,10 @@ export const LandingPage: React.FC = () => {
             </div>
 
             {/* Workflow steps layout */}
-            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 py-8">
+            <div className="flex overflow-x-auto md:overflow-x-visible flex-nowrap md:flex-wrap items-center justify-start md:justify-center gap-2 sm:gap-3 py-8 w-full max-w-full scrollbar-none pb-4">
               {/* PDF Document Node */}
               <div
-                className={`p-3.5 rounded-xl border flex flex-col items-center justify-center gap-2 w-28 h-32 relative font-mono transition-all duration-300 animate-workflow-float ${
+                className={`p-3.5 rounded-xl border flex flex-col items-center justify-center gap-2 w-28 h-32 shrink-0 relative font-mono transition-all duration-300 animate-workflow-float ${
                   animationStep === 0
                     ? 'border-emerald-500 bg-emerald-500/5 shadow-[0_0_15px_rgba(16,185,129,0.25)] scale-[1.02]'
                     : animationStep === 4
@@ -109,7 +109,7 @@ export const LandingPage: React.FC = () => {
 
               {/* OTP Key Node */}
               <div
-                className={`p-3.5 rounded-xl border flex flex-col items-center justify-center gap-2 w-28 h-32 relative font-mono transition-all duration-300 ${
+                className={`p-3.5 rounded-xl border flex flex-col items-center justify-center gap-2 w-28 h-32 shrink-0 relative font-mono transition-all duration-300 ${
                   animationStep === 1
                     ? 'border-emerald-500 bg-emerald-500/5 shadow-[0_0_15px_rgba(16,185,129,0.25)] scale-[1.02]'
                     : 'border-zinc-850 bg-zinc-950/40 text-zinc-500'
@@ -138,9 +138,9 @@ export const LandingPage: React.FC = () => {
 
               {/* Secure Viewer Node */}
               <div
-                className={`p-2.5 rounded-xl border flex flex-col justify-between w-30 h-32 relative font-mono transition-all duration-300 overflow-hidden ${
+                className={`p-2.5 rounded-xl border flex flex-col justify-between w-30 h-32 shrink-0 relative font-mono transition-all duration-300 overflow-hidden ${
                   animationStep === 2
-                    ? 'border-emerald-500 bg-emerald-500/5 shadow-[0_0_15px_rgba(16,185,129,0.2)] scale-[1.02]'
+                    ? 'border-emerald-500 bg-emerald-500/5 shadow-[0_0_15px_rgba(16,185,129,0.25)] scale-[1.02]'
                     : animationStep === 4
                     ? 'border-rose-500/50 bg-rose-950/10 shadow-[0_0_15px_rgba(244,63,94,0.15)]'
                     : 'border-zinc-850 bg-zinc-950/40 text-zinc-500'
@@ -190,7 +190,7 @@ export const LandingPage: React.FC = () => {
 
               {/* Printer Node */}
               <div
-                className={`p-3.5 rounded-xl border flex flex-col items-center justify-center gap-2 w-28 h-32 relative font-mono transition-all duration-300 ${
+                className={`p-3.5 rounded-xl border flex flex-col items-center justify-center gap-2 w-28 h-32 shrink-0 relative font-mono transition-all duration-300 ${
                   animationStep === 3
                     ? 'border-emerald-500 bg-emerald-500/5 shadow-[0_0_15px_rgba(16,185,129,0.25)] scale-[1.02]'
                     : 'border-zinc-850 bg-zinc-950/40 text-zinc-500'
@@ -221,7 +221,7 @@ export const LandingPage: React.FC = () => {
 
               {/* Destruct Node */}
               <div
-                className={`p-3.5 rounded-xl border flex flex-col items-center justify-center gap-2 w-28 h-32 relative font-mono transition-all duration-300 overflow-hidden ${
+                className={`p-3.5 rounded-xl border flex flex-col items-center justify-center gap-2 w-28 h-32 shrink-0 relative font-mono transition-all duration-300 overflow-hidden ${
                   animationStep === 4
                     ? 'border-rose-500 bg-rose-950/10 shadow-[0_0_15px_rgba(244,63,94,0.25)] scale-[1.02]'
                     : 'border-zinc-850 bg-zinc-950/40 text-zinc-500'

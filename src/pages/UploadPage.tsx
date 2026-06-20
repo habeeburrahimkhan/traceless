@@ -202,7 +202,7 @@ export const UploadPage: React.FC = () => {
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
-                className="p-8 rounded-2xl border-2 border-dashed border-zinc-800 hover:border-emerald-500/30 bg-zinc-950/40 hover:bg-zinc-950/80 transition-all duration-300 text-center cursor-pointer space-y-3 group"
+                className="p-4 sm:p-8 rounded-2xl border-2 border-dashed border-zinc-800 hover:border-emerald-500/30 bg-zinc-950/40 hover:bg-zinc-950/80 transition-all duration-300 text-center cursor-pointer space-y-3 group"
               >
                 <div className="h-12 w-12 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto text-zinc-400 group-hover:text-emerald-400 group-hover:border-emerald-500/30 transition-all">
                   <UploadCloud className="h-6 w-6" />
