@@ -51,6 +51,37 @@ TraceLess Access uses a decoupled zero-knowledge architecture. The uploader brow
 7. **Secure viewing**: Payload is rendered inside a sandboxed viewport with dynamic watermarks and disabled shortcut inspect controls.
 8. **Automatic destruction**: Spooling to print or exceeding views instantly triggers server-side storage shredding.
 
+## Usage Guide
+
+### Uploading a Document
+
+1. Open the application.
+2. Navigate to the Secure Upload page.
+3. Upload a PDF, image, or text document.
+4. Configure view limits and expiration settings.
+5. Generate a secure OTP.
+
+### Accessing a Document
+
+1. Open the recipient access page.
+2. Enter the document ID or secure access code.
+3. Verify identity using the OTP.
+4. View the document in the secure viewer.
+
+### Printing a Document
+
+1. Open the decrypted document.
+2. Click the Print button.
+3. Complete the print operation.
+4. The document will automatically enter the destruction workflow based on configured policies.
+
+### Administrator Actions
+
+1. Log in to the Admin Dashboard.
+2. Monitor active documents.
+3. View audit logs.
+4. Revoke access or manually destroy documents.
+
 ## Application Screenshots
 
 ### Dashboard
@@ -84,6 +115,25 @@ TraceLess Access uses a decoupled zero-knowledge architecture. The uploader brow
 | **Email** | Resend |
 | **Deployment** | Vercel |
 | **Security** | AES-256-GCM, PBKDF2, SHA-256 |
+
+## Dependencies
+
+Core dependencies include:
+
+- React
+- TypeScript
+- TailwindCSS
+- Next.js
+- PostgreSQL
+- Supabase
+- Resend
+- Web Crypto API
+
+Install all dependencies using:
+
+```bash
+npm install
+```
 
 ## Installation
 
