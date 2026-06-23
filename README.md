@@ -1,111 +1,154 @@
-# TraceLess Access
+# 🔒 TraceLess Access
 
-Zero-trust secure document sharing: upload files with view limits and expiry, share OTP-protected links, and audit every access attempt.
+### Zero-Knowledge Secure Document Lifecycle Platform
 
-**Stack:** React + Vite (frontend) · Vercel Serverless (API) · Supabase (database + file storage) · Resend (optional OTP email)
-
----
-
-## 1. Supabase setup (free tier)
-
-1. Create a project at [supabase.com](https://supabase.com).
-2. Open **SQL Editor** and run the full contents of [`supabase_schema.sql`](./supabase_schema.sql).
-3. Go to **Storage → New bucket**:
-   - Name: `traceless-files`
-   - Public: **OFF** (private bucket)
-4. Copy from **Project Settings → API**:
-   - Project URL → `SUPABASE_URL`
-   - `service_role` key → `SUPABASE_SERVICE_ROLE_KEY` (keep secret, server-only)
+Securely upload, share, decrypt, print, and automatically destroy sensitive documents using AES-256 encryption, OTP-based access control, and zero-trust architecture.
 
 ---
 
-## 2. Local development
+🌐 **Live Demo:** [https://traceless-iota.vercel.app](https://traceless-iota.vercel.app)
+
+💻 **GitHub Repository:** [https://github.com/habeeburrahimkhan/traceless](https://github.com/habeeburrahimkhan/traceless)
+
+🎥 **Demo Video:** *[InnovateZ Presentation Video Link]*
+
+---
+
+![TraceLess Dashboard](assets/dashboard.png)
+
+## Overview
+
+In the modern enterprise, sharing highly confidential files (e.g. audited financials, payroll summaries, legal drafts, health records) via standard communication channels like email or WhatsApp is extremely insecure. These platforms store files permanently, leaving them exposed to storage leaks, compromised recipient accounts, and unauthorized secondary distribution. 
+
+**TraceLess Access** solves this vulnerability by establishing a zero-trust, ephemeral secure document lifecycle pipeline. Files are encrypted client-side in the uploader's browser, stored as encrypted blobs, unlocked only in the recipient's browser memory via one-time passcodes (OTP), printed securely, and instantly purged from all physical and virtual memory registers—leaving absolutely zero digital footprints.
+
+## Key Features
+
+- **AES-256-GCM Client-Side Encryption**: Documents are encrypted in the local browser context using the Web Crypto API before transmission.
+- **OTP-Based Access Verification**: Restricts authorization to specific work email domains and verifies identities using single-use passcodes.
+- **Zero-Knowledge Storage Architecture**: Storage networks hold only ciphertext blobs and wrapped key envelopes. The server remains blind to the decryption key.
+- **Browser-Side Decryption**: Keys are derived and payloads unlocked in the client browser's memory, ensuring data is never decrypted at rest on any server.
+- **Secure Printing Workflow**: Integrates sandboxed viewport printing with immediate post-print self-destruct triggers.
+- **Automatic Document Destruction**: Payloads and keys are automatically shredded immediately upon view count expiration, lifespan timer expiry, or manual admin revocation.
+- **Audit Logging & Traceability**: Tamper-evident logging of uploads, verification requests, access grants, and blocked intrusion attempts.
+- **Admin Dashboard**: Real-time administrative oversight with live activity logs, share lifecycles, and remote revocation controls.
+- **End-to-End Encrypted Storage**: Secure PostgreSQL and object storage integration.
+
+## Architecture
+
+![Architecture](assets/architecture.png)
+
+TraceLess Access uses a decoupled zero-knowledge architecture. The uploader browser generates a random 256-bit AES key, encrypts the document, and wraps the AES key using a derived key (PBKDF2) bound to a single-use OTP. The encrypted payload is spooled to a private cloud bucket, and the wrapped key envelope is uploaded to the metadata registry database. The receiver client fetches the envelope, receives the OTP, unwraps the key locally, decrypts the payload in RAM, spools it to the system printer, and triggers an automated database shredding routine.
+
+## System Workflow
+
+1. **User uploads document**: Uploader drags file into the secure panel, selecting access limits (views/lifespan).
+2. **Client-side AES encryption**: Browser generates a symmetric key and encrypts the file.
+3. **OTP generation & key wrapping**: Browser derives an OTP key, encrypts the file key, and generates a 6-digit access code.
+4. **Secure storage**: Encrypted payload is uploaded to storage; wrapped key envelope is saved in database.
+5. **Recipient verification**: Recipient requests decryption code, dispatched via Resend to their authorized inbox.
+6. **Browser-side decryption**: Recipient inputs OTP, browser unwraps the AES key, and decrypts the payload.
+7. **Secure viewing**: Payload is rendered inside a sandboxed viewport with dynamic watermarks and disabled shortcut inspect controls.
+8. **Automatic destruction**: Spooling to print or exceeding views instantly triggers server-side storage shredding.
+
+## Application Screenshots
+
+### Dashboard
+
+![Dashboard](assets/dashboard.png)
+
+### Secure Upload
+
+![Upload](assets/upload.png)
+
+### OTP Verification
+
+![OTP](assets/otp.png)
+
+### Secure Viewer
+
+![Viewer](assets/viewer.png)
+
+### Auto Destruction
+
+![Destroyed](assets/destroyed.png)
+
+## Technology Stack
+
+| Layer | Technology |
+|---------|------------|
+| **Frontend** | React, TypeScript, TailwindCSS, Vanilla CSS 3D |
+| **Backend** | Next.js API Routes, Node.js |
+| **Database** | PostgreSQL (Supabase) |
+| **Storage** | Supabase Storage Bucket |
+| **Email** | Resend |
+| **Deployment** | Vercel |
+| **Security** | AES-256-GCM, PBKDF2, SHA-256 |
+
+## Installation
+
+To clone and run this project locally:
 
 ```bash
+git clone https://github.com/habeeburrahimkhan/traceless.git
+cd traceless
 npm install
-cp .env.example .env.local
-# Fill in Supabase credentials in .env.local
+npm run dev
 ```
 
-Run the full app (frontend + API):
+## Environment Variables
 
-```bash
-npx vercel dev
+Configure the following variables in your `.env.local` or hosting provider settings:
+
+```env
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+ADMIN_PASSCODE=your_operations_passcode
+VITE_ADMIN_PASSCODE=your_operations_passcode
+RESEND_API_KEY=your_resend_api_key
+RESEND_FROM_EMAIL=your_resend_verified_from_email
 ```
 
-Or run frontend only (API calls need `vercel dev` on port 3000):
+## Security Model
 
-```bash
-npm run dev:frontend
-```
+TraceLess Access is built on zero-knowledge security principles:
+* **Documents are encrypted before upload**: Raw data never leaves the client machine unencrypted.
+* **Storage providers never receive plaintext files**: Payloads are stored strictly as encrypted binary data.
+* **Decryption occurs only in the recipient's browser**: Decrypted buffers exist transiently in RAM and are never written to disk.
+* **OTP verification controls access**: Enforces multi-factor domain-bound authentication checks.
+* **Documents are automatically destroyed after use**: Access keys and storage paths are fully wiped upon expiration.
 
----
+## Enterprise Use Cases
 
-## 3. Deploy to Vercel (free tier)
+- 🏦 **Banking & Financials**: Transmitting audit reports, transaction statements, and regulatory compliance filings.
+- 🏥 **Healthcare**: Sharing highly sensitive patient medical records, lab results, and genomic data securely.
+- ⚖️ **Legal Firms**: EPhemeral delivery of legal contracts, evidence files, and court transcripts to opposing counsel.
+- 🎓 **Universities**: Dispatching private exam papers, answer sheets, and grade records to external evaluators.
+- 🏛️ **Government**: Distributing confidential briefs and security briefings to local agency nodes.
+- 🏢 **HR & Enterprise**: Secure distribution of payroll statements, employee offers, and strategic roadmap files.
 
-1. Push this repo to GitHub.
-2. Import the project at [vercel.com/new](https://vercel.com/new).
-3. Add these **Environment Variables** in Vercel project settings:
+## Current Status
 
-| Variable | Required | Notes |
-|----------|----------|-------|
-| `SUPABASE_URL` | Yes | Supabase project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Service role key (never expose to client) |
-| `ADMIN_PASSCODE` | Yes | Admin login passcode for dashboard API |
-| `VITE_ADMIN_PASSCODE` | Yes | Same value as `ADMIN_PASSCODE` |
-| `RESEND_API_KEY` | No | Enables real OTP emails |
-| `RESEND_FROM_EMAIL` | No | Verified sender in Resend (default: `onboarding@resend.dev`) |
+### Working
+- [x] Secure Upload with view/lifespan limits
+- [x] Client-side AES-256-GCM Encryption
+- [x] Resend OTP email verification dispatch
+- [x] Secure sandbox viewer with print-once trigger
+- [x] Live activity audit ledgers
+- [x] Server-side storage auto-destruction
+- [x] Vercel serverless deployment
 
-4. Deploy. Vercel automatically builds the Vite app and deploys `/api/*` serverless functions.
-
----
-
-## 4. Using the app
-
-| Role | Default passcode | Pages |
-|------|------------------|-------|
-| Admin | `admin123` (change in env) | Dashboard, Upload, Vendor Access, Audit |
-| Recipient | — | Secure Viewer (OTP or share link) |
-
-**Share link format:** `https://your-app.vercel.app/?page=viewer&docId=doc-xxxxxxx`
-
-**Upload flow:** Upload a file → copy the 6-digit OTP → send link + OTP to recipient.
-
-**Email OTP (optional):** Enable "Highly Confidential Mode" on upload. Recipient enters their email, receives OTP via Resend (or sees it in a toast if Resend is not configured).
+### Planned
+- [ ] Enterprise SSO Integration
+- [ ] WebAuthn / Biometric Recipient Authentication
+- [ ] Advanced GeoIP Intelligence tracking
 
 ---
 
-## API routes
+## Team Zenith
 
-| Route | Auth | Purpose |
-|-------|------|---------|
-| `POST /api/upload` | Public | Upload file + create document |
-| `GET /api/document?docId=` | Public | Fetch document metadata |
-| `POST /api/lookup-otp` | Public | Find document by 6-digit OTP |
-| `POST /api/request-otp` | Public | Send OTP email |
-| `POST /api/verify-otp` | Public | Verify OTP and download content |
-| `GET /api/dashboard-data` | Admin header | List documents + audit logs |
-| `POST /api/burn` | Admin header | Revoke or burn a document |
-| `POST /api/clear-logs` | Admin header | Purge audit trail |
+InnovateZ 2026 Submission
 
-Admin requests must include header: `X-Admin-Token: <your ADMIN_PASSCODE>`.
+TraceLess Access – Secure Document Lifecycle Platform
 
----
-
-## Resend (optional, free tier)
-
-1. Sign up at [resend.com](https://resend.com).
-2. Create an API key → `RESEND_API_KEY`.
-3. For production, verify your own domain and set `RESEND_FROM_EMAIL`.
-4. Without Resend, OTP codes appear in the UI toast after requesting verification.
-
----
-
-## Scripts
-
-```bash
-npm run dev          # Full stack via Vercel dev server
-npm run dev:frontend # Vite only
-npm run build        # Production build
-npm run preview      # Preview production build
-```
+*Built with security, privacy, and zero-trust principles.*
