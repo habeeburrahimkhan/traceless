@@ -5,7 +5,7 @@ import {
   ShieldAlert, ShieldCheck, FileText, Activity, 
   Trash2, Eye, Clock, ExternalLink, Settings, 
   ArrowUpDown, Filter, Sparkles, X, ChevronRight,
-  TrendingUp, Calendar, Zap, AlertTriangle
+  Zap, AlertTriangle
 } from 'lucide-react';
 
 // Pure React + CSS Mouse-Interactive 3D Card Tilt Component

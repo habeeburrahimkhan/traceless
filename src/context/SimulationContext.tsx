@@ -283,15 +283,15 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   };
 
-  const burnDocument = async (docId: string, actionType: 'burned' | 'expired') => {
+  const burnDocument = async (docId: string, actionType: 'burned' | 'expired' | 'revoked') => {
     try {
-      await api.burnDocumentApi(docId, actionType);
+      await api.burnDocumentApi(docId, actionType === 'revoked' ? 'burned' : actionType);
       setDocuments((prev) =>
         prev.map((doc) =>
           doc.id === docId
             ? {
                 ...doc,
-                status: actionType === 'expired' ? 'expired' : 'burned',
+                status: actionType === 'expired' ? 'expired' : actionType === 'revoked' ? 'revoked' : 'burned',
                 content: '',
                 otpCode: null,
                 decryptionKey: '0x0000...0000 (PURGED)',
@@ -302,10 +302,17 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       if (activeViewerDocId === docId) {
         setViewerAuthenticated(false);
         setViewerDoc((prev) =>
-          prev ? { ...prev, status: actionType === 'expired' ? 'expired' : 'burned', content: '' } : prev
+          prev ? { ...prev, status: actionType === 'expired' ? 'expired' : actionType === 'revoked' ? 'revoked' : 'burned', content: '' } : prev
         );
       }
-      triggerToast(actionType === 'expired' ? 'Document has expired' : 'Document has self-destructed', 'error');
+      triggerToast(
+        actionType === 'expired' 
+          ? 'Document has expired' 
+          : actionType === 'revoked'
+            ? 'Document access has been revoked'
+            : 'Document has self-destructed', 
+        'error'
+      );
       await refreshData();
     } catch (error) {
       triggerToast(error instanceof Error ? error.message : 'Failed to burn document', 'error');

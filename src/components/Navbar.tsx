@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSimulation } from '../context/SimulationContext';
-import { ShieldAlert, RefreshCw, UploadCloud, Users, Activity, Home, Database, Lock, Terminal, Sun, Moon } from 'lucide-react';
+import { ShieldAlert, UploadCloud, Users, Activity, Home, Database, Lock, Terminal, Sun, Moon } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const { currentPage, navigate, documents, isAdmin, logoutAdmin, loginAsAdmin, theme, toggleTheme } = useSimulation();
@@ -15,11 +15,6 @@ export const Navbar: React.FC = () => {
       setPasscode('');
       navigate('dashboard');
     }
-  };
-
-  const handleReset = () => {
-    sessionStorage.removeItem('tl_admin_token');
-    window.location.href = '/';
   };
 
   const isInternalAdmin = isAdmin && currentPage !== 'landing' && currentPage !== 'viewer';
