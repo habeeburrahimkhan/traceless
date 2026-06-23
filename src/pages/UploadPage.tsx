@@ -2,8 +2,8 @@ import React, { useState, useRef } from 'react';
 import { useSimulation } from '../context/SimulationContext';
 import { getShareUrl } from '../lib/api';
 import { generateKey, exportKey, encryptData, encryptFileKeyWithOtp } from '../lib/crypto';
-import { 
-  UploadCloud, Mail, Eye, ShieldAlert, Key, 
+import {
+  UploadCloud, Mail, Eye, ShieldAlert, Key,
   Lock, CheckCircle, FileText, ArrowRight, Settings, RefreshCw, X, File, LockKeyhole,
   ChevronDown
 } from 'lucide-react';
@@ -28,11 +28,11 @@ const TiltCard: React.FC<TiltCardProps> = ({ children, className = '', glowColor
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
 
-    const rotateX = ((centerY - y) / centerY) * 7; 
+    const rotateX = ((centerY - y) / centerY) * 7;
     const rotateY = ((x - centerX) / centerX) * 7;
 
     setTransform(`perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.015, 1.015, 1.015)`);
-    
+
     const glowX = (x / rect.width) * 100;
     const glowY = (y / rect.height) * 100;
     setGlow({ x: glowX, y: glowY, opacity: 0.15 });
@@ -47,14 +47,14 @@ const TiltCard: React.FC<TiltCardProps> = ({ children, className = '', glowColor
     <div
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      style={{ 
-        transform, 
+      style={{
+        transform,
         transition: 'transform 0.15s ease-out, box-shadow 0.15s ease-out',
         transformStyle: 'preserve-3d'
       }}
       className={`relative overflow-hidden transition-all duration-300 ${className}`}
     >
-      <div 
+      <div
         className="absolute inset-0 pointer-events-none transition-opacity duration-300 z-10"
         style={{
           background: `radial-gradient(circle 150px at ${glow.x}% ${glow.y}%, ${glowColor}, transparent)`,
@@ -75,8 +75,8 @@ export const UploadPage: React.FC = () => {
   // Form states
   const [customFile, setCustomFile] = useState<File | null>(null);
   const [targetEmail, setTargetEmail] = useState<string>('partner@external-audit.com');
-  const [maxViews, setMaxViews] = useState<number>(5); 
-  const [expiryMinutes, setExpiryMinutes] = useState<number>(30); 
+  const [maxViews, setMaxViews] = useState<number>(5);
+  const [expiryMinutes, setExpiryMinutes] = useState<number>(30);
   const [requireWatermark, setRequireWatermark] = useState<boolean>(true);
   const [requireEmailVerification, setRequireEmailVerification] = useState<boolean>(false);
 
@@ -241,7 +241,7 @@ export const UploadPage: React.FC = () => {
           animation: spinUploaderHelix 14s linear infinite;
         }
       `}</style>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
         {/* Left Side: Upload Form / Success receipts (col-span-8) */}
         <div className="lg:col-span-8 space-y-8 flex flex-col justify-start">
@@ -260,13 +260,13 @@ export const UploadPage: React.FC = () => {
                 <label className="text-xs font-mono text-zinc-400 uppercase tracking-wider block">
                   Upload PDF, Picture, or Document
                 </label>
-                
-                <input 
-                  type="file" 
+
+                <input
+                  type="file"
                   ref={fileInputRef}
-                  accept=".pdf,image/*,.docx,.txt,.json,.ts" 
+                  accept=".pdf,image/*,.docx,.txt,.json,.ts"
                   onChange={handleFileChange}
-                  className="hidden" 
+                  className="hidden"
                   id="pdf-upload-input"
                 />
 
@@ -309,7 +309,7 @@ export const UploadPage: React.FC = () => {
                           Drag and drop file here, or <span className="text-emerald-400 hover:underline">browse files</span>
                         </p>
                         <p className="text-[10px] text-zinc-655 font-mono">
-                          PDF, PNG, JPG, WebP, TXT, JSON, DOCX (Max 20MB)
+                          PDF, PNG, JPG, WebP, TXT, JSON, DOCX
                         </p>
                       </div>
                     </div>
@@ -437,7 +437,7 @@ export const UploadPage: React.FC = () => {
                         <span>{uploadProgress}%</span>
                       </div>
                       <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden">
-                        <div 
+                        <div
                           className="h-full bg-emerald-500 transition-all duration-200"
                           style={{ width: `${uploadProgress}%` }}
                         />
@@ -560,7 +560,7 @@ export const UploadPage: React.FC = () => {
         <div className="hidden lg:flex lg:col-span-4 flex-col items-center justify-between space-y-4 border border-zinc-850 bg-zinc-955/95 p-6 rounded-2xl relative overflow-hidden min-h-[500px]">
           <div className="absolute inset-0 cyber-grid opacity-25 pointer-events-none" />
           <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">spool status: active</span>
-          
+
           {/* Object 1: Tunnel Vault Scanner */}
           <div className="w-40 h-40 relative flex items-center justify-center" style={{ perspective: '800px' }}>
             <div className="w-full h-full relative uploader-3d-rings">
@@ -585,7 +585,7 @@ export const UploadPage: React.FC = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="space-y-1.5 font-mono text-[10px] text-zinc-500 text-center w-full">
             <p>TUNNEL COMPILING: <span className="text-emerald-400 font-bold">READY</span></p>
             <p>CRYPTO ENGINE: <span className="text-zinc-300 font-bold">ONLINE</span></p>
