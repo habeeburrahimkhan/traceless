@@ -48,6 +48,7 @@ export async function fetchDashboardData(): Promise<{
 }
 
 export async function uploadDocument(payload: {
+  id?: string;
   name: string;
   size: string;
   type: string;
@@ -57,6 +58,8 @@ export async function uploadDocument(payload: {
   maxViews: number;
   expiresAt: string | null;
   content: string;
+  otpCode?: string;
+  decryptionKey?: string;
 }): Promise<Document> {
   return apiFetch('/api/upload', {
     method: 'POST',
@@ -101,3 +104,18 @@ export async function burnDocumentApi(docId: string, actionType: 'burned' | 'exp
 export async function clearLogsApi(): Promise<void> {
   await apiFetch('/api/clear-logs', { method: 'POST' });
 }
+
+export async function extendExpiryApi(docId: string, minutes: number): Promise<Document> {
+  return apiFetch('/api/extend-expiry', {
+    method: 'POST',
+    body: JSON.stringify({ docId, minutes }),
+  });
+}
+
+export async function simulateAttackApi(docId?: string): Promise<void> {
+  await apiFetch('/api/simulate-attack', {
+    method: 'POST',
+    body: JSON.stringify({ docId }),
+  });
+}
+

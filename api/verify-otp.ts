@@ -85,7 +85,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             otp_code: null,
             decryption_key: '0x0000...0000 (PURGED)',
           },
-          { content: payloadContent }
+          { content: payloadContent, includeSecrets: true }
         )
       );
     }
@@ -105,7 +105,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           views_count: nextViews,
           otp_code: null,
         },
-        { content: payloadContent }
+        { content: payloadContent, includeSecrets: true }
       )
     );
   } catch (err: unknown) {

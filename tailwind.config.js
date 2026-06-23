@@ -1,3 +1,12 @@
+function withOpacity(variableName) {
+  return ({ opacityValue }) => {
+    if (opacityValue !== undefined) {
+      return `rgba(var(${variableName}), ${opacityValue})`;
+    }
+    return `rgb(var(${variableName}))`;
+  };
+}
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -7,13 +16,30 @@ export default {
   theme: {
     extend: {
       colors: {
+        zinc: {
+          50: withOpacity("--zinc-50-rgb"),
+          100: withOpacity("--zinc-100-rgb"),
+          200: withOpacity("--zinc-200-rgb"),
+          300: withOpacity("--zinc-300-rgb"),
+          400: withOpacity("--zinc-400-rgb"),
+          500: withOpacity("--zinc-500-rgb"),
+          650: withOpacity("--zinc-600-rgb"), // Ensure we support any custom zinc-650 in original code
+          600: withOpacity("--zinc-600-rgb"),
+          750: withOpacity("--zinc-700-rgb"), // Ensure we support any custom zinc-750 in original code
+          700: withOpacity("--zinc-700-rgb"),
+          855: withOpacity("--zinc-800-rgb"),
+          800: withOpacity("--zinc-800-rgb"),
+          900: withOpacity("--zinc-900-rgb"),
+          955: withOpacity("--zinc-950-rgb"), // Ensure we support any custom zinc-955 in original code
+          950: withOpacity("--zinc-950-rgb"),
+        },
         cyber: {
-          bg: "#030303",
-          card: "#09090b",
-          cardLight: "#18181b",
-          border: "#1f1f23",
-          borderLight: "#2e2e33",
-          muted: "#8e8e93",
+          bg: withOpacity("--cyber-bg-rgb"),
+          card: withOpacity("--cyber-card-rgb"),
+          cardLight: withOpacity("--cyber-cardLight-rgb"),
+          border: withOpacity("--cyber-border-rgb"),
+          borderLight: withOpacity("--cyber-borderLight-rgb"),
+          muted: "var(--cyber-muted)", // simple variable works since it has no slash opacity modifiers in code
           emerald: {
             DEFAULT: "#10b981",
             glow: "rgba(16, 185, 129, 0.15)",

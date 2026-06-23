@@ -1,9 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useSimulation } from '../context/SimulationContext';
-import { ShieldAlert, RefreshCw, UploadCloud, Users, Activity, Home, Database, Lock, Terminal } from 'lucide-react';
+import { ShieldAlert, RefreshCw, UploadCloud, Users, Activity, Home, Database, Lock, Terminal, Sun, Moon } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
-  const { currentPage, navigate, documents, isAdmin, logoutAdmin, loginAsAdmin } = useSimulation();
+  const { currentPage, navigate, documents, isAdmin, logoutAdmin, loginAsAdmin, theme, toggleTheme } = useSimulation();
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [passcode, setPasscode] = useState('');
+
+  const handleAdminSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const success = loginAsAdmin(passcode);
+    if (success) {
+      setShowLoginModal(false);
+      setPasscode('');
+      navigate('dashboard');
+    }
+  };
 
   const handleReset = () => {
     sessionStorage.removeItem('tl_admin_token');
@@ -13,7 +25,8 @@ export const Navbar: React.FC = () => {
   const isInternalAdmin = isAdmin && currentPage !== 'landing' && currentPage !== 'viewer';
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-cyber-border bg-cyber-bg/85 backdrop-blur-md shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+    <>
+    <header className="sticky top-0 z-40 w-full border-b border-cyber-border bg-[var(--cyber-bg-header)] backdrop-blur-md shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
       {/* Simulation status ribbon */}
       <div className="bg-zinc-950 border-b border-zinc-900/60 px-4 py-2 text-xs text-zinc-400 flex items-center justify-between font-mono">
         <div className="flex items-center gap-2">
@@ -27,13 +40,6 @@ export const Navbar: React.FC = () => {
         </div>
         <div className="flex items-center gap-3">
           <span className="hidden md:inline text-xs text-zinc-650 bg-zinc-900/40 px-2 py-0.5 rounded border border-zinc-900">LIVE TERMINAL</span>
-          <button 
-            onClick={handleReset} 
-            title="Reset simulation data to initial mocks"
-            className="flex items-center gap-1 bg-emerald-950/20 hover:bg-emerald-950/50 border border-emerald-900/20 hover:border-emerald-500/40 text-emerald-400 px-2 py-0.5 rounded font-mono text-xs uppercase tracking-wider transition-all"
-          >
-            <RefreshCw className="h-2.5 w-2.5 text-emerald-400" /> Sync Reset
-          </button>
         </div>
       </div>
 
@@ -46,7 +52,7 @@ export const Navbar: React.FC = () => {
           <div className="h-9 w-9 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center group-hover:border-emerald-500/50 group-hover:shadow-[0_0_15px_rgba(16,185,129,0.35)] transition-all duration-300">
             <ShieldAlert className="h-5 w-5 text-emerald-400 group-hover:scale-110 transition-transform duration-300" />
           </div>
-          <span className="text-xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-400 font-mono flex items-center gap-2">
+          <span className="text-xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-zinc-100 to-zinc-400 font-mono flex items-center gap-2">
             TRACELESS <span className="text-xs tracking-normal font-bold text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 shadow-[0_0_10px_rgba(16,185,129,0.15)] font-sans">ACCESS</span>
           </span>
         </div>
@@ -126,13 +132,6 @@ export const Navbar: React.FC = () => {
         <div className="flex items-center gap-3">
           {currentPage === 'landing' ? (
             <div className="flex items-center gap-2">
-              <button
-                onClick={handleReset}
-                className="px-3 py-1.5 rounded-lg border border-zinc-855 text-xs text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 bg-zinc-955 hover:bg-zinc-900 transition-all font-mono flex items-center gap-1.5"
-                title="Reset database to initial simulated status"
-              >
-                <RefreshCw className="h-3.5 w-3.5 text-zinc-550" /> Flush Database
-              </button>
               {isAdmin ? (
                 <button
                   onClick={() => navigate('dashboard')}
@@ -142,13 +141,7 @@ export const Navbar: React.FC = () => {
                 </button>
               ) : (
                 <button
-                  onClick={() => {
-                    const passcode = prompt("Enter administrator passcode credentials:");
-                    if (passcode !== null) {
-                      const success = loginAsAdmin(passcode);
-                      if (success) navigate('dashboard');
-                    }
-                  }}
+                  onClick={() => setShowLoginModal(true)}
                   className="bg-zinc-900 hover:bg-zinc-850 text-zinc-350 border border-zinc-800 hover:border-zinc-750 px-4 py-1.5 rounded-lg text-sm font-semibold font-mono tracking-wide transition-all active:scale-95 flex items-center gap-1.5"
                 >
                   <Lock className="h-3.5 w-3.5 text-zinc-550" /> ADMIN LOGIN
@@ -176,6 +169,15 @@ export const Navbar: React.FC = () => {
               Portal Home
             </button>
           )}
+
+          {/* Theme Toggle Button */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-lg border border-zinc-800 hover:border-zinc-700 bg-zinc-900/60 hover:bg-zinc-900/90 text-zinc-400 hover:text-zinc-200 transition-all flex items-center justify-center"
+            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+          >
+            {theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400 animate-pulse-slow" /> : <Moon className="h-4 w-4 text-cyan-400" />}
+          </button>
         </div>
       </div>
 
@@ -221,5 +223,55 @@ export const Navbar: React.FC = () => {
         </div>
       )}
     </header>
+
+      {showLoginModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in font-sans">
+          <div className="w-full max-w-sm rounded-2xl border border-zinc-800 bg-zinc-950 p-6 space-y-4 shadow-2xl relative overflow-hidden font-mono text-xs text-zinc-400">
+            <div className="absolute top-0 right-0 p-2 opacity-5">
+              <Lock className="h-24 w-24 text-emerald-450" />
+            </div>
+
+            <div className="flex items-center gap-2 border-b border-zinc-900 pb-3">
+              <Lock className="h-5 w-5 text-emerald-400" />
+              <h3 className="text-sm font-bold text-zinc-100 uppercase tracking-wider">Admin Verification</h3>
+            </div>
+
+            <form onSubmit={handleAdminSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] text-zinc-500 uppercase tracking-widest block">Security Passcode</label>
+                <input
+                  type="password"
+                  required
+                  value={passcode}
+                  onChange={(e) => setPasscode(e.target.value)}
+                  placeholder="••••••••"
+                  autoFocus
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs font-mono text-zinc-200 focus:outline-none focus:border-emerald-500/50"
+                />
+              </div>
+
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowLoginModal(false);
+                    setPasscode('');
+                  }}
+                  className="flex-1 bg-zinc-900 hover:bg-zinc-850 text-zinc-400 px-4 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all border border-zinc-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-emerald-500 hover:bg-emerald-450 text-black px-4 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all"
+                >
+                  Authorize
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
   );
 };

@@ -2,13 +2,99 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Dark mode default variables */
+  --cyber-bg: #030303;
+  --cyber-bg-rgb: 3, 3, 3;
+  --cyber-card: #09090b;
+  --cyber-card-rgb: 9, 9, 11;
+  --cyber-cardLight: #18181b;
+  --cyber-cardLight-rgb: 24, 24, 27;
+  --cyber-border: #1f1f23;
+  --cyber-border-rgb: 31, 31, 35;
+  --cyber-borderLight: #2e2e33;
+  --cyber-borderLight-rgb: 46, 46, 51;
+  --cyber-muted: #8e8e93;
+
+  --zinc-50-rgb: 250, 250, 250;
+  --zinc-100-rgb: 244, 244, 245;
+  --zinc-200-rgb: 228, 228, 231;
+  --zinc-300-rgb: 212, 212, 216;
+  --zinc-400-rgb: 161, 161, 170;
+  --zinc-500-rgb: 113, 113, 122;
+  --zinc-600-rgb: 82, 82, 91;
+  --zinc-700-rgb: 63, 63, 70;
+  --zinc-800-rgb: 39, 39, 42;
+  --zinc-900-rgb: 24, 24, 27;
+  --zinc-950-rgb: 9, 9, 11;
+
+  --grid-color: rgba(63, 63, 70, 0.15);
+  --radial-glow-emerald: radial-gradient(circle 800px at 50% 200px, rgba(16, 185, 129, 0.08), transparent 80%);
+  --radial-glow-rose: radial-gradient(circle 600px at 50% 200px, rgba(244, 63, 94, 0.08), transparent 80%);
+  --cyber-card-glass: rgba(9, 9, 11, 0.75);
+  --cyber-card-light-glass: rgba(24, 24, 27, 0.85);
+  --cyber-bg-header: rgba(3, 3, 3, 0.85);
+
+  --text-gradient-emerald-from: #34d399;
+  --text-gradient-emerald-via: #99f6e4;
+  --text-gradient-emerald-to: #a1a1aa;
+
+  --text-gradient-rose-from: #fb7185;
+  --text-gradient-rose-via: #fde68a;
+  --text-gradient-rose-to: #a1a1aa;
+}
+
+[data-theme="light"] {
+  /* Light mode variables - soft gray palette for harmony, readability and professional look */
+  --cyber-bg: #f4f4f5;
+  --cyber-bg-rgb: 244, 244, 245;
+  --cyber-card: #ffffff;
+  --cyber-card-rgb: 255, 255, 255;
+  --cyber-cardLight: #e4e4e7;
+  --cyber-cardLight-rgb: 228, 228, 231;
+  --cyber-border: #d4d4d8;
+  --cyber-border-rgb: 212, 212, 216;
+  --cyber-borderLight: #c4c4c7;
+  --cyber-borderLight-rgb: 196, 196, 199;
+  --cyber-muted: #52525b;
+
+  --zinc-50-rgb: 3, 3, 3;
+  --zinc-100-rgb: 9, 9, 11;
+  --zinc-200-rgb: 24, 24, 27;
+  --zinc-300-rgb: 39, 39, 42;
+  --zinc-400-rgb: 63, 63, 70;
+  --zinc-500-rgb: 82, 82, 91;
+  --zinc-600-rgb: 113, 113, 122;
+  --zinc-700-rgb: 161, 161, 170;
+  --zinc-800-rgb: 212, 212, 216;
+  --zinc-900-rgb: 228, 228, 231;
+  --zinc-950-rgb: 255, 255, 255;
+
+  --grid-color: rgba(9, 9, 11, 0.08);
+  --radial-glow-emerald: radial-gradient(circle 800px at 50% 200px, rgba(16, 185, 129, 0.04), transparent 85%);
+  --radial-glow-rose: radial-gradient(circle 600px at 50% 200px, rgba(244, 63, 94, 0.04), transparent 85%);
+  --cyber-card-glass: rgba(255, 255, 255, 0.75);
+  --cyber-card-light-glass: rgba(228, 228, 231, 0.85);
+  --cyber-bg-header: rgba(244, 244, 245, 0.85);
+
+  --text-gradient-emerald-from: #047857;
+  --text-gradient-emerald-via: #0f766e;
+  --text-gradient-emerald-to: #4b5563;
+
+  --text-gradient-rose-from: #be123c;
+  --text-gradient-rose-via: #b45309;
+  --text-gradient-rose-to: #4b5563;
+}
+
 @layer base {
   html {
     font-size: 112.5%;
   }
   body {
     @apply bg-cyber-bg text-zinc-100 font-sans antialiased overflow-x-hidden;
-    background-color: #030303;
+    background-color: var(--cyber-bg);
+    color: var(--zinc-100);
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   /* Scale custom Tailwind text-px utility classes to moderate relative rems */
@@ -26,14 +112,14 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #09090b;
+    background: var(--cyber-bg);
   }
   ::-webkit-scrollbar-thumb {
-    background: #27272a;
+    background: var(--cyber-borderLight);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #3f3f46;
+    background: var(--cyber-muted);
   }
 }
 
@@ -41,8 +127,8 @@
 .cyber-grid {
   background-size: 40px 40px;
   background-image: 
-    linear-gradient(to right, rgba(63, 63, 70, 0.15) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(63, 63, 70, 0.15) 1px, transparent 1px);
+    linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
 }
 
 .cyber-grid-active {
@@ -53,11 +139,11 @@
 }
 
 .radial-glow {
-  background: radial-gradient(circle 800px at 50% 200px, rgba(16, 185, 129, 0.08), transparent 80%);
+  background: var(--radial-glow-emerald);
 }
 
 .radial-glow-rose {
-  background: radial-gradient(circle 600px at 50% 200px, rgba(244, 63, 94, 0.08), transparent 80%);
+  background: var(--radial-glow-rose);
 }
 
 .glow-card-emerald {
@@ -70,21 +156,30 @@
   border-color: rgba(244, 63, 94, 0.3) !important;
 }
 
-/* Custom Text masking and glass styling */
 .glass-panel {
-  @apply bg-cyber-card/75 border border-cyber-border backdrop-blur-md;
+  background-color: var(--cyber-card-glass);
+  @apply border border-cyber-border backdrop-blur-md;
 }
 
 .glass-panel-hover {
-  @apply hover:bg-cyber-cardLight/85 hover:border-cyber-borderLight transition-all duration-300;
+  @apply hover:border-cyber-borderLight transition-all duration-300;
+}
+.glass-panel-hover:hover {
+  background-color: var(--cyber-card-light-glass);
 }
 
 .text-gradient-emerald {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-teal-200 to-zinc-400;
+  background-image: linear-gradient(to right, var(--text-gradient-emerald-from), var(--text-gradient-emerald-via), var(--text-gradient-emerald-to));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .text-gradient-rose {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-rose-400 via-amber-200 to-zinc-400;
+  background-image: linear-gradient(to right, var(--text-gradient-rose-from), var(--text-gradient-rose-via), var(--text-gradient-rose-to));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 /* Simulated screen scanline effect */

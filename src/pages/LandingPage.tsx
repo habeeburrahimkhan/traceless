@@ -11,7 +11,7 @@ export const LandingPage: React.FC = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setAnimationStep(prev => (prev + 1) % 5);
-    }, 2800); // 2.8s cycle timing is highly legible
+    }, 2800); 
     return () => clearInterval(interval);
   }, []);
 
@@ -31,7 +31,6 @@ export const LandingPage: React.FC = () => {
     }
   };
 
-  // Connecting line helper
   const FlowLine = ({ active, isPurging }: { active: boolean; isPurging: boolean }) => (
     <div className="w-3 sm:w-5 shrink-0 h-0.5 bg-zinc-900 relative rounded-full self-center">
       {active && (
@@ -45,10 +44,121 @@ export const LandingPage: React.FC = () => {
   );
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] flex items-center justify-center bg-cyber-bg overflow-hidden py-12 px-4 sm:px-6 lg:px-8">
+    <div className="relative min-h-[calc(100vh-4rem)] flex items-center justify-center bg-cyber-bg overflow-hidden py-12 px-4 sm:px-6 lg:px-8 animate-fade-in text-left">
+      <style>{`
+        @keyframes spinLeftObject {
+          0% { transform: rotateX(20deg) rotateY(0deg) rotateZ(0deg); }
+          100% { transform: rotateX(20deg) rotateY(360deg) rotateZ(360deg); }
+        }
+        @keyframes spinRightObject {
+          0% { transform: rotateX(70deg) rotateY(360deg) rotateZ(0deg); }
+          100% { transform: rotateX(70deg) rotateY(0deg) rotateZ(-360deg); }
+        }
+        @keyframes spinLeftAlt {
+          0% { transform: rotateX(45deg) rotateY(0deg) rotateZ(45deg); }
+          100% { transform: rotateX(45deg) rotateY(360deg) rotateZ(45deg); }
+        }
+        @keyframes spinRightAlt {
+          0% { transform: rotateX(30deg) rotateY(360deg) rotateZ(120deg); }
+          100% { transform: rotateX(30deg) rotateY(0deg) rotateZ(120deg); }
+        }
+        .left-3d-prism {
+          transform-style: preserve-3d;
+          animation: spinLeftObject 25s linear infinite;
+        }
+        .right-3d-gyro {
+          transform-style: preserve-3d;
+          animation: spinRightObject 22s linear infinite;
+        }
+        .left-3d-rings-alt {
+          transform-style: preserve-3d;
+          animation: spinLeftAlt 19s linear infinite;
+        }
+        .right-3d-cube-alt {
+          transform-style: preserve-3d;
+          animation: spinRightAlt 26s linear infinite;
+        }
+        .prism-face {
+          position: absolute;
+          width: 0;
+          height: 0;
+          border-left: 50px solid transparent;
+          border-right: 50px solid transparent;
+          border-bottom: 90px solid rgba(16, 185, 129, 0.15);
+          border-bottom-color: rgba(16, 185, 129, 0.35);
+          transform-origin: 50% 100%;
+        }
+        .prism-face-cyan {
+          position: absolute;
+          width: 0;
+          height: 0;
+          border-left: 45px solid transparent;
+          border-right: 45px solid transparent;
+          border-bottom: 80px solid rgba(6, 182, 212, 0.15);
+          border-bottom-color: rgba(6, 182, 212, 0.35);
+          transform-origin: 50% 100%;
+        }
+      `}</style>
+
       {/* Grid background */}
-      <div className="absolute inset-0 cyber-grid opacity-30 pointer-events-none" />
-      <div className="absolute inset-0 radial-glow pointer-events-none" />
+      <div className="absolute inset-0 cyber-grid opacity-75 pointer-events-none" style={{ mixBlendMode: 'screen' }} />
+      <div className="absolute inset-0 radial-glow opacity-90 pointer-events-none" style={{ filter: 'blur(40px)' }} />
+
+      {/* LEFT 3D OBJECT 1: Holographic Security Prism */}
+      <div className="absolute left-[8%] top-[25%] w-32 h-32 pointer-events-none hidden 2xl:block" style={{ perspective: '800px' }}>
+        <div className="w-full h-full relative left-3d-prism" style={{ filter: 'drop-shadow(0 0 15px rgba(16, 185, 129, 0.45))' }}>
+          {/* Upper Pyramid faces */}
+          <div className="prism-face" style={{ transform: 'rotateY(0deg) rotateX(30deg) translateZ(0px)' }} />
+          <div className="prism-face" style={{ transform: 'rotateY(90deg) rotateX(30deg) translateZ(0px)' }} />
+          <div className="prism-face" style={{ transform: 'rotateY(180deg) rotateX(30deg) translateZ(0px)' }} />
+          <div className="prism-face" style={{ transform: 'rotateY(270deg) rotateX(30deg) translateZ(0px)' }} />
+          {/* Lower Pyramid faces */}
+          <div className="prism-face" style={{ transform: 'translateY(90px) scaleY(-1) rotateY(0deg) rotateX(30deg)' }} />
+          <div className="prism-face" style={{ transform: 'translateY(90px) scaleY(-1) rotateY(90deg) rotateX(30deg)' }} />
+          <div className="prism-face" style={{ transform: 'translateY(90px) scaleY(-1) rotateY(180deg) rotateX(30deg)' }} />
+          <div className="prism-face" style={{ transform: 'translateY(90px) scaleY(-1) rotateY(270deg) rotateX(30deg)' }} />
+        </div>
+      </div>
+
+      {/* LEFT 3D OBJECT 2: Secondary Quantum Ring System */}
+      <div className="absolute left-[8%] top-[60%] w-32 h-32 pointer-events-none hidden 2xl:block" style={{ perspective: '800px' }}>
+        <div className="w-full h-full relative left-3d-rings-alt">
+          <div className="absolute inset-0 border-2 border-cyan-500 rounded-full opacity-60" style={{ filter: 'drop-shadow(0 0 8px rgba(6,182,212,0.4))' }} />
+          <div className="absolute inset-3 border border-double border-emerald-500 rounded-full opacity-50" style={{ transform: 'rotateY(90deg)', filter: 'drop-shadow(0 0 8px rgba(16,185,129,0.3))' }} />
+          <div className="absolute inset-6 border border-zinc-700 rounded-full" style={{ transform: 'rotateX(90deg)' }} />
+          <div className="absolute inset-9 border-2 border-dotted border-cyan-400 rounded-full flex items-center justify-center">
+            <div className="w-3.5 h-3.5 rounded-full bg-cyan-400 animate-ping" />
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT 3D OBJECT 1: Quantum Gyroscopic Ring System */}
+      <div className="absolute right-[8%] top-[25%] w-36 h-36 pointer-events-none hidden 2xl:block" style={{ perspective: '800px' }}>
+        <div className="w-full h-full relative right-3d-gyro">
+          <div className="absolute inset-0 border-4 border-double border-cyan-400 rounded-full" style={{ filter: 'drop-shadow(0 0 10px rgba(6,182,212,0.4))' }} />
+          <div className="absolute inset-4 border-2 border-dashed border-emerald-500 rounded-full" style={{ transform: 'rotateY(90deg)', filter: 'drop-shadow(0 0 10px rgba(16,185,129,0.4))' }} />
+          <div className="absolute inset-8 border border-zinc-700 rounded-full" style={{ transform: 'rotateX(90deg)' }} />
+          <div className="absolute inset-12 border-2 border-emerald-500 rounded-full flex items-center justify-center" style={{ transform: 'rotateZ(45deg)' }}>
+            <div className="w-4 h-4 rounded-full bg-emerald-400 animate-ping" />
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT 3D OBJECT 2: Holographic Security Prism Alt */}
+      <div className="absolute right-[8%] top-[60%] w-32 h-32 pointer-events-none hidden 2xl:block" style={{ perspective: '800px' }}>
+        <div className="w-full h-full relative right-3d-cube-alt" style={{ filter: 'drop-shadow(0 0 12px rgba(6, 182, 212, 0.4))' }}>
+          {/* Upper Pyramid faces */}
+          <div className="prism-face-cyan" style={{ transform: 'rotateY(0deg) rotateX(30deg) translateZ(0px)' }} />
+          <div className="prism-face-cyan" style={{ transform: 'rotateY(90deg) rotateX(30deg) translateZ(0px)' }} />
+          <div className="prism-face-cyan" style={{ transform: 'rotateY(180deg) rotateX(30deg) translateZ(0px)' }} />
+          <div className="prism-face-cyan" style={{ transform: 'rotateY(270deg) rotateX(30deg) translateZ(0px)' }} />
+          {/* Lower Pyramid faces */}
+          <div className="prism-face-cyan" style={{ transform: 'translateY(80px) scaleY(-1) rotateY(0deg) rotateX(30deg)' }} />
+          <div className="prism-face-cyan" style={{ transform: 'translateY(80px) scaleY(-1) rotateY(90deg) rotateX(30deg)' }} />
+          <div className="prism-face-cyan" style={{ transform: 'translateY(80px) scaleY(-1) rotateY(180deg) rotateX(30deg)' }} />
+          <div className="prism-face-cyan" style={{ transform: 'translateY(80px) scaleY(-1) rotateY(270deg) rotateX(30deg)' }} />
+        </div>
+      </div>
 
       <div className="max-w-5xl w-full space-y-10 relative z-10">
         {/* Title */}
@@ -64,10 +174,10 @@ export const LandingPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Hero Interactive Area (Workflow Visualization & Security Status Panel) */}
+        {/* Hero Interactive Area */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch max-w-4xl mx-auto">
-          {/* Interactive Workflow Visualization (col-span-8) */}
-          <div className="lg:col-span-8 border border-zinc-800 bg-zinc-950/40 rounded-2xl p-6 flex flex-col justify-between relative overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.4)]">
+          {/* Interactive Workflow Visualization */}
+          <div className="lg:col-span-8 border border-zinc-800 bg-zinc-955/95 rounded-2xl p-6 flex flex-col justify-between relative overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.4)]">
             <div className="text-left space-y-1 pb-3 border-b border-zinc-900/60">
               <h3 className="text-sm font-bold text-emerald-400 font-mono uppercase tracking-widest flex items-center gap-1.5">
                 <Terminal className="h-4 w-4 text-emerald-400 animate-pulse" /> Dynamic Protection Flow
@@ -77,7 +187,6 @@ export const LandingPage: React.FC = () => {
               </p>
             </div>
 
-            {/* Workflow steps layout */}
             <div className="flex overflow-x-auto md:overflow-x-visible flex-nowrap md:flex-wrap items-center justify-start md:justify-center gap-2 sm:gap-3 py-8 w-full max-w-full scrollbar-none pb-4">
               {/* PDF Document Node */}
               <div
@@ -143,7 +252,7 @@ export const LandingPage: React.FC = () => {
                     ? 'border-emerald-500 bg-emerald-500/5 shadow-[0_0_15px_rgba(16,185,129,0.25)] scale-[1.02]'
                     : animationStep === 4
                     ? 'border-rose-500/50 bg-rose-950/10 shadow-[0_0_15px_rgba(244,63,94,0.15)]'
-                    : 'border-zinc-850 bg-zinc-950/40 text-zinc-500'
+                    : 'border-zinc-855 bg-zinc-955/40 text-zinc-500'
                 }`}
               >
                 <div className="flex justify-between items-center text-[8px] border-b border-zinc-900/60 pb-1.5">
@@ -233,7 +342,6 @@ export const LandingPage: React.FC = () => {
                       DATA PURGED
                     </div>
                     
-                    {/* Dissolving particles representation */}
                     <div className="relative w-full h-6 overflow-hidden mt-1.5 opacity-80">
                       <span className="absolute bg-emerald-500 rounded-full h-0.5 w-0.5 left-[15%] top-1 animate-ping" />
                       <span className="absolute bg-rose-500 rounded-full h-0.5 w-0.5 left-[50%] top-2 animate-ping" />
@@ -261,8 +369,8 @@ export const LandingPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Security Status Panel (col-span-4) */}
-          <div className="lg:col-span-4 border border-zinc-800 bg-zinc-950/40 rounded-2xl p-5 flex flex-col justify-between font-mono relative overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.4)]">
+          {/* Security Status Panel */}
+          <div className="lg:col-span-4 border border-zinc-800 bg-zinc-950/95 rounded-2xl p-5 flex flex-col justify-between font-mono relative overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.4)]">
             <div className="flex items-center justify-between border-b border-zinc-900/60 pb-3">
               <span className="text-xs text-zinc-400 flex items-center gap-1.5 uppercase font-bold">
                 <ShieldCheck className="h-4 w-4 text-emerald-400" /> Command Ledger
@@ -273,7 +381,6 @@ export const LandingPage: React.FC = () => {
             </div>
 
             <div className="space-y-2 py-4 text-xs">
-              {/* Row 1: Encryption */}
               <div className="flex items-center justify-between p-2 rounded bg-zinc-950 border border-zinc-900/60">
                 <span className="text-zinc-500 uppercase font-semibold">ENCRYPTION</span>
                 <span className="flex items-center gap-1.5 font-bold text-emerald-400">
@@ -282,7 +389,6 @@ export const LandingPage: React.FC = () => {
                 </span>
               </div>
 
-              {/* Row 2: OTP Protection */}
               <div className="flex items-center justify-between p-2 rounded bg-zinc-950 border border-zinc-900/60">
                 <span className="text-zinc-500 uppercase font-semibold">OTP PROTECTION</span>
                 <span className="flex items-center gap-1.5 font-bold text-emerald-400">
@@ -291,7 +397,6 @@ export const LandingPage: React.FC = () => {
                 </span>
               </div>
 
-              {/* Row 3: Download Access */}
               <div className="flex items-center justify-between p-2 rounded bg-zinc-950 border border-zinc-900/60">
                 <span className="text-zinc-500 uppercase font-semibold">DOWNLOAD ACCESS</span>
                 <span className="flex items-center gap-1.5 font-bold text-rose-500">
@@ -300,7 +405,6 @@ export const LandingPage: React.FC = () => {
                 </span>
               </div>
 
-              {/* Row 4: Local Storage */}
               <div className="flex items-center justify-between p-2 rounded bg-zinc-950 border border-zinc-900/60">
                 <span className="text-zinc-500 uppercase font-semibold">LOCAL STORAGE</span>
                 <span className="flex items-center gap-1.5 font-bold text-emerald-400">
@@ -309,7 +413,6 @@ export const LandingPage: React.FC = () => {
                 </span>
               </div>
 
-              {/* Row 5: File Lifetime */}
               <div className="flex items-center justify-between p-2 rounded bg-zinc-950 border border-zinc-900/60">
                 <span className="text-zinc-500 uppercase font-semibold">FILE LIFETIME</span>
                 <span className="flex items-center gap-1.5 font-bold text-amber-500">
@@ -318,7 +421,6 @@ export const LandingPage: React.FC = () => {
                 </span>
               </div>
 
-              {/* Row 6: Auto Destruct */}
               <div className="flex items-center justify-between p-2 rounded bg-zinc-950 border border-zinc-900/60">
                 <span className="text-zinc-500 uppercase font-semibold">AUTO DESTRUCT</span>
                 <span className="flex items-center gap-1.5 font-bold text-rose-500 animate-pulse">
@@ -344,7 +446,7 @@ export const LandingPage: React.FC = () => {
           {/* Role A: User (Uploader) */}
           <div 
             onClick={() => navigate('upload')}
-            className="group relative p-6 rounded-2xl border border-zinc-800 bg-zinc-950/60 hover:bg-zinc-950 hover:border-emerald-500/30 transition-all duration-300 cursor-pointer flex flex-col justify-between text-left shadow-[0_4px_30px_rgba(0,0,0,0.4)]"
+            className="group relative p-6 rounded-2xl border border-zinc-800 bg-zinc-955/95 hover:bg-zinc-950 hover:border-emerald-500/30 transition-all duration-300 cursor-pointer flex flex-col justify-between text-left shadow-[0_4px_30px_rgba(0,0,0,0.4)]"
           >
             <div className="space-y-4">
               <div className="h-10 w-10 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform">
@@ -366,7 +468,7 @@ export const LandingPage: React.FC = () => {
           {/* Role B: Print Shop / Recipient */}
           <div 
             onClick={() => navigate('viewer')}
-            className="group relative p-6 rounded-2xl border border-zinc-800 bg-zinc-950/60 hover:bg-zinc-950 hover:border-cyan-500/30 transition-all duration-300 cursor-pointer flex flex-col justify-between text-left shadow-[0_4px_30px_rgba(0,0,0,0.4)]"
+            className="group relative p-6 rounded-2xl border border-zinc-800 bg-zinc-955/95 hover:bg-zinc-950 hover:border-cyan-500/30 transition-all duration-300 cursor-pointer flex flex-col justify-between text-left shadow-[0_4px_30px_rgba(0,0,0,0.4)]"
           >
             <div className="space-y-4">
               <div className="h-10 w-10 bg-cyan-500/10 border border-cyan-500/20 rounded-xl flex items-center justify-center text-cyan-400 group-hover:scale-105 transition-transform">

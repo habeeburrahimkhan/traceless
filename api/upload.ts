@@ -17,6 +17,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const {
+      id: customId,
       name,
       size,
       type,
@@ -26,23 +27,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       maxViews,
       expiresAt,
       content,
+      otpCode,
+      decryptionKey,
     } = req.body;
 
     if (!name || !content) {
       return res.status(400).json({ error: 'Missing name or content file payload' });
     }
 
-    const id = `doc-${Math.random().toString(36).substring(2, 9)}`;
-    const generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
+    const id = customId || `doc-${Math.random().toString(36).substring(2, 9)}`;
+    const generatedOTP = otpCode || Math.floor(100000 + Math.random() * 900000).toString();
     const hexChars = '0123456789ABCDEF';
     let mockKey = '0x';
     for (let i = 0; i < 8; i++) mockKey += hexChars[Math.floor(Math.random() * 16)];
     mockKey += '...';
     for (let i = 0; i < 4; i++) mockKey += hexChars[Math.floor(Math.random() * 16)];
 
+    const finalDecryptionKey = decryptionKey || mockKey;
+
     const isBase64 = content.startsWith('data:');
     const base64Clean = isBase64 ? content.split(',')[1] : content;
-    const fileBuffer = Buffer.from(base64Clean, isBase64 ? 'base64' : 'utf-8');
+    const fileBuffer = Buffer.from(base64Clean, (isBase64 || decryptionKey) ? 'base64' : 'utf-8');
 
     const bucketName = 'traceless-files';
     const filePath = `${id}/${name}`;
@@ -71,7 +76,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       require_watermark: requireWatermark,
       require_email_verification: requireEmailVerification ?? false,
       status: 'active',
-      decryption_key: mockKey,
+      decryption_key: finalDecryptionKey,
       storage_path: filePath,
     };
 

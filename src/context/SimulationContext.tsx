@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import * as api from '../lib/api';
+import { decryptFileKeyWithOtp, importKey, decryptData } from '../lib/crypto';
 
 export interface Document {
   id: string;
@@ -56,15 +57,23 @@ interface SimulationContextType {
   loadViewerDocument: (docId: string) => Promise<Document | null>;
   lookupByOtp: (code: string) => Promise<Document | null>;
   addDocument: (
-    doc: Omit<Document, 'id' | 'uploadedAt' | 'viewsCount' | 'status' | 'otpCode' | 'decryptionKey'>
+    doc: Omit<Document, 'id' | 'uploadedAt' | 'viewsCount' | 'status' | 'otpCode' | 'decryptionKey'> & {
+      id?: string;
+      otpCode?: string;
+      decryptionKey?: string;
+    }
   ) => Promise<Document>;
   revokeDocument: (id: string) => Promise<void>;
   requestOTP: (docId: string, email: string) => Promise<boolean>;
   verifyOTP: (docId: string, code: string) => Promise<boolean>;
-  burnDocument: (docId: string, actionType: 'burned' | 'expired') => Promise<void>;
+  burnDocument: (docId: string, actionType: 'burned' | 'expired' | 'revoked') => Promise<void>;
   triggerToast: (message: string, type: 'info' | 'success' | 'warning' | 'error', otpCode?: string) => void;
   dismissToast: (id: string) => void;
+  theme: 'light' | 'dark';
+  toggleTheme: () => void;
   clearAllLogs: () => Promise<void>;
+  extendExpiry: (docId: string, minutes: number) => Promise<void>;
+  simulateAttack: (docId?: string) => Promise<void>;
 }
 
 const SimulationContext = createContext<SimulationContextType | undefined>(undefined);
@@ -80,6 +89,18 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isAdmin, setIsAdmin] = useState<boolean>(() => api.getAdminToken().length > 0);
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    return (localStorage.getItem('theme') as 'light' | 'dark') || 'dark';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  }, []);
 
   const triggerToast = useCallback(
     (message: string, type: 'info' | 'success' | 'warning' | 'error', otpCode?: string) => {
@@ -209,9 +230,14 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, [isAdmin, currentPage, refreshData]);
 
   const addDocument = async (
-    doc: Omit<Document, 'id' | 'uploadedAt' | 'viewsCount' | 'status' | 'otpCode' | 'decryptionKey'>
+    doc: Omit<Document, 'id' | 'uploadedAt' | 'viewsCount' | 'status' | 'otpCode' | 'decryptionKey'> & {
+      id?: string;
+      otpCode?: string;
+      decryptionKey?: string;
+    }
   ) => {
     const uploaded = await api.uploadDocument({
+      id: doc.id,
       name: doc.name,
       size: doc.size,
       type: doc.type,
@@ -221,6 +247,8 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       maxViews: doc.maxViews,
       expiresAt: doc.expiresAt,
       content: doc.content,
+      otpCode: doc.otpCode,
+      decryptionKey: doc.decryptionKey,
     });
 
     setDocuments((prev) => [uploaded, ...prev]);
@@ -311,6 +339,27 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const verifyOTP = async (docId: string, code: string) => {
     try {
       const unlocked = await api.verifyOtp(docId, code);
+
+      try {
+        if (unlocked.decryptionKey && unlocked.content && unlocked.id) {
+          const rawKeyB64 = await decryptFileKeyWithOtp(unlocked.decryptionKey, code, unlocked.id);
+          const aesKey = await importKey(rawKeyB64);
+          
+          let encryptedData = unlocked.content;
+          if (encryptedData.startsWith('data:')) {
+            encryptedData = encryptedData.split(',')[1];
+          }
+
+          const decryptedContent = await decryptData(encryptedData, aesKey);
+          unlocked.content = decryptedContent;
+          unlocked.decryptionKey = '0x' + rawKeyB64.slice(0, 8) + '...';
+        }
+      } catch (cryptoErr) {
+        console.error("Client decryption failed:", cryptoErr);
+        triggerToast("Decryption Error: Failed to cryptographically unlock document payload.", "error");
+        return false;
+      }
+
       setViewerDoc(unlocked);
       setViewerAuthenticated(true);
       triggerToast('Access granted. Document decrypted.', 'success');
@@ -330,6 +379,29 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       triggerToast('Audit trail successfully purged.', 'info');
     } catch (error) {
       triggerToast(error instanceof Error ? error.message : 'Failed to clear logs', 'error');
+    }
+  };
+
+  const extendExpiry = async (docId: string, minutes: number) => {
+    try {
+      const updated = await api.extendExpiryApi(docId, minutes);
+      setDocuments((prev) =>
+        prev.map((doc) => (doc.id === docId ? { ...doc, expiresAt: updated.expiresAt } : doc))
+      );
+      triggerToast(`Document lifespan extended by ${minutes} minutes.`, 'success');
+      await refreshData();
+    } catch (error) {
+      triggerToast(error instanceof Error ? error.message : 'Failed to extend document lifespan', 'error');
+    }
+  };
+
+  const simulateAttack = async (docId?: string) => {
+    try {
+      await api.simulateAttackApi(docId);
+      triggerToast('Intrusion attempt simulated and logged.', 'warning');
+      await refreshData();
+    } catch (error) {
+      triggerToast(error instanceof Error ? error.message : 'Failed to simulate intrusion', 'error');
     }
   };
 
@@ -360,6 +432,10 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         triggerToast,
         dismissToast,
         clearAllLogs,
+        theme,
+        toggleTheme,
+        extendExpiry,
+        simulateAttack,
       }}
     >
       {children}
